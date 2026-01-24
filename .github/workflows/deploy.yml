@@ -16,6 +16,9 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            # Cargar rutas de node y npm automáticamente
+            source ~/.profile || source ~/.bashrc
+            
             cd /var/www/SIAF
             git pull origin main
             
@@ -28,5 +31,5 @@ jobs:
             npm install
             npm run build
             
-            # Reiniciar servicio
-            pm2 restart siaf-backend
+            # Reiniciar con PM2 (Ajustado a tu nombre de proceso)
+            pm2 restart siaf-backend || pm2 start src/index.js --name siaf-backend
