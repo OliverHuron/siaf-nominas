@@ -28,5 +28,5 @@ jobs:
             npm install
             npm run build
             
-            # Reiniciar servicio pm2
+            # Reiniciar servicio
             pm2 restart siaf-backend
