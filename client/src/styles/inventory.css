@@ -1,0 +1,251 @@
+/* Estilos para el inventario */
+
+/* Grid layout para vista de tarjetas */
+.grid {
+  display: grid;
+  gap: 20px;
+  padding: 20px 0;
+}
+
+.grid-3 {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+/* Estilos para las tarjetas de inventario */
+.inventory-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.inventory-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #3b82f6;
+}
+
+.inventory-card .card-header {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inventory-card .card-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.inventory-card .card-body {
+  padding: 16px;
+}
+
+.inventory-card .card-body p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.inventory-card .card-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  display: flex;
+  gap: 8px;
+}
+
+/* Estados/badges - Colores suaves actualizados */
+.badge.buena {
+  background-color: #d1fae5 !important;
+  color: #065f46 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+.badge.danado {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+}
+
+.badge.defectuoso {
+  background-color: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+}
+
+.badge.baja {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* Botones flex */
+.flex-1 {
+  flex: 1;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+/* ===== ESTILOS PARA BOTONES SIN CLASES EN INVENTARIO ===== */
+/* Máxima prioridad - captura TODOS los botones en tabla de inventario */
+.table-container table tbody td button,
+.table-container button,
+.inventory-grid button,
+table.table tbody td button,
+td button,
+button[title="Ver detalles"],
+button[title="Editar"] {
+  background: white !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 6px !important;
+  margin: 0 2px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+}
+
+.table-container table tbody td button:hover,
+.table-container button:hover,
+.inventory-grid button:hover,
+table.table tbody td button:hover,
+td button:hover,
+button[title="Ver detalles"]:hover,
+button[title="Editar"]:hover {
+  background: #f8fafc !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Botón eliminar - ROJO SUAVE */
+.table-container table tbody td button[title="Eliminar"],
+.table-container button[title="Eliminar"],
+.inventory-grid button[title="Eliminar"],
+table.table tbody td button[title="Eliminar"],
+td button[title="Eliminar"],
+button[title="Eliminar"] {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+  padding: 6px !important;
+  margin: 0 2px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+
+.table-container table tbody td button[title="Eliminar"]:hover,
+.table-container button[title="Eliminar"]:hover,
+.inventory-grid button[title="Eliminar"]:hover,
+table.table tbody td button[title="Eliminar"]:hover,
+td button[title="Eliminar"]:hover,
+button[title="Eliminar"]:hover {
+  background: #fee2e2 !important;
+  color: #7f1d1d !important;
+  border-color: #fca5a5 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Estilos específicos para botones de acciones en tabla */
+.btn.btn-secondary.btn-sm.btn-icon {
+  background: white !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 6px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+
+.btn.btn-secondary.btn-sm.btn-icon:hover {
+  background: #f8fafc !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.btn.btn-danger.btn-sm.btn-icon {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+  padding: 6px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+
+.btn.btn-danger.btn-sm.btn-icon:hover {
+  background: #fee2e2 !important;
+  color: #7f1d1d !important;
+  border-color: #fca5a5 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .inventory-card .card-footer {
+    flex-direction: column;
+  }
+  
+  .inventory-card .card-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* CRITICAL: Estilos finales para botones - Deben estar al final del archivo */
+button.btn.btn-sm.btn-secondary.btn-icon,
+button.btn.btn-secondary.btn-sm.btn-icon {
+  background: white !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 6px !important;
+  margin: 0 !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+
+button.btn.btn-sm.btn-secondary.btn-icon:hover,
+button.btn.btn-secondary.btn-sm.btn-icon:hover {
+  background: #f8fafc !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+button.btn.btn-sm.btn-danger.btn-icon,
+button.btn.btn-danger.btn-sm.btn-icon {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+  padding: 6px !important;
+  margin: 0 !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+
+button.btn.btn-sm.btn-danger.btn-icon:hover,
+button.btn.btn-danger.btn-sm.btn-icon:hover {
+  background: #fee2e2 !important;
+  color: #7f1d1d !important;
+  border-color: #fca5a5 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}

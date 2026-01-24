@@ -1,0 +1,200 @@
+/**
+ * SKELETON LOADER - SUPER OPTIMIZED
+ * Performance optimizations:
+ * - GPU acceleration with transform and will-change
+ * - Single pseudo-element animation (no extra DOM nodes)
+ * - contentvisiblity for off-screen rendering optimization
+ * - Reduced repaints with transform instead of background-position
+ */
+
+.skeleton {
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    background-color: #e0e0e0;
+    vertical-align: middle;
+
+    /* Performance optimizations */
+    will-change: transform;
+    contain: layout style paint;
+
+    /* Prevent layout shifts */
+    min-height: 1px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .skeleton {
+        background-color: #2a2a2a;
+    }
+}
+
+/* Shimmer effect using pseudo-element - GPU accelerated */
+.skeleton::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.4) 30%,
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(255, 255, 255, 0.4) 70%,
+            rgba(255, 255, 255, 0) 100%);
+
+    /* GPU acceleration */
+    transform: translateX(-100%);
+    animation: skeleton-shimmer 1.2s ease-in-out infinite;
+
+    /* Force GPU layer */
+    will-change: transform;
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .skeleton::after {
+        background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.1) 30%,
+                rgba(255, 255, 255, 0.2) 50%,
+                rgba(255, 255, 255, 0.1) 70%,
+                rgba(255, 255, 255, 0) 100%);
+    }
+}
+
+/* Optimized keyframe animation using only transform */
+@keyframes skeleton-shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .skeleton::after {
+        animation: none;
+    }
+
+    .skeleton {
+        opacity: 0.7;
+    }
+}
+
+/* Spacing for multiple skeletons */
+.skeleton+.skeleton {
+    margin-top: 8px;
+}
+
+/* ========================================
+   PRESET LAYOUTS
+   ======================================== */
+
+/* Skeleton Table */
+.skeleton-table {
+    width: 100%;
+    border-spacing: 0;
+    contain: layout style;
+}
+
+.skeleton-table-row {
+    display: flex;
+    gap: 16px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.skeleton-table-row .skeleton {
+    flex: 1;
+    margin: 0;
+}
+
+/* Skeleton Card */
+.skeleton-card {
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    contain: layout style;
+}
+
+.skeleton-card-content {
+    padding: 16px;
+}
+
+.skeleton-card-content .skeleton {
+    margin-bottom: 12px;
+}
+
+.skeleton-card-content .skeleton:last-child {
+    margin-bottom: 0;
+}
+
+/* Skeleton List */
+.skeleton-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    contain: layout style;
+}
+
+.skeleton-list-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.skeleton-list-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ========================================
+   PULSE VARIANT (Alternative animation)
+   ======================================== */
+.skeleton-pulse {
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-pulse::after {
+    display: none;
+}
+
+@keyframes skeleton-pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* ========================================
+   PERFORMANCE UTILITIES
+   ======================================== */
+
+/* Container for multiple skeletons */
+.skeleton-container {
+    contain: layout style paint;
+    content-visibility: auto;
+}
+
+/* Hide off-screen skeletons for better performance */
+.skeleton-container--lazy {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 500px;
+}

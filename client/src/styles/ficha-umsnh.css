@@ -1,0 +1,551 @@
+/* Estilos exactos del HTML original proporcionado */
+.a4-size {
+  width: 130mm; /* Reducido más de 150mm */
+  height: 167mm; /* Reducido más de 193mm */
+  max-width: 520px; /* Reducido de 600px */
+  max-height: 680px; /* Reducido de 750px */
+  margin: 20px auto; /* Centrar en la página */
+  position: relative;
+  background-color: white;
+  z-index: 0;
+  border: 1px solid #ccc; /* Borde para visualizar mejor */
+  padding: 12px; /* Reducido de 15px */
+  box-sizing: border-box;
+}
+
+.a4-size::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  /* Imagen se maneja desde React para evitar problemas de ruta */
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  opacity: 0.3;
+  z-index: 1;
+}
+
+.facultad {
+  position: relative;
+  z-index: 2; /* Asegura que el contenido esté encima de la marca de agua */
+  text-align: center;
+  padding: 10px;
+  margin-left: 20px; /* Mover hacia la derecha para estar dentro de la marca de agua */
+}
+
+.facultad h1 {
+  font-size: 12px; /* Reducido más de 14px */
+  margin-bottom: 6px; /* Reducido de 8px */
+  text-align: right;
+  transform: translateY(50px) translateX(-20px); /* Ajustar posición */
+  color: #002061;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  line-height: 0.8;
+  font-family: 'Arial', sans-serif;
+  max-width: 200px; /* Más ancho */
+  margin-left: auto; /* Alinear a la derecha */
+}
+
+.facultad p {
+  font-size: 16px;
+  color: #333;
+}
+
+.humanista {
+  position: relative;
+  z-index: 2; /* Asegura que el contenido esté encima de la marca de agua */
+  text-align: center;
+  padding: 20px;
+}
+
+.humanista h1 {
+  font-size: 10px; /* Reducido de 12px */
+  font-weight: bold;
+  margin-bottom: 8px; /* Reducido de 10px */
+  margin-top: 45px; /* Reducido de 60px */
+  align-items: center;
+  text-align: center;
+  color: #002061;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  line-height: 0.7;
+  font-family: 'Arial', sans-serif;
+}
+
+.fecha-envio-container {
+  display: flex;
+  align-items: flex-start;
+  margin: 15px 0; /* Más separación */
+  margin-bottom: 25px; /* Más espacio abajo */
+  position: relative;
+  z-index: 2;
+  justify-content: flex-end;
+}
+
+.fecha-envio-label {
+  color: #808080;
+  font-size: 11px;
+  font-family: Arial, sans-serif;
+  margin-right: 5px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.fecha-envio {
+  width: 50%;
+  border-collapse: collapse;
+  font-family: Arial, sans-serif;
+}
+
+.fecha-envio td {
+  border: 0.5px solid #888;
+  padding: 6px 4px; /* Más compacto */
+  font-size: 8px; /* Más pequeño */
+  color: #333;
+  background-color: white;
+}
+
+.form-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: -10px 0 5px 0; /* Margin negativo arriba para subir las celdas */
+  font-size: 10px;
+  font-family: Arial, sans-serif;
+}
+
+.form-table td {
+  border: 0.5px solid #888;
+  padding: 5px 8px 30px 8px;
+  vertical-align: top;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.field-label {
+  width: 30%;
+  font-size: 12px;
+  color: #808080;
+  font-family: Century Gothic, sans-serif;
+  text-align: left;
+  vertical-align: top;
+}
+
+.field-value {
+  width: 70%;
+  font-size: 12px;
+  color: #333;
+  text-align: left;
+  vertical-align: top;
+}
+
+.field-value-centered {
+  width: 70%;
+  font-size: 11px;
+  color: #808080;
+  text-align: left;
+  vertical-align: middle;
+}
+
+/* Clases para filas con 4 columnas */
+.field-label-4col {
+  width: 25%;
+  font-size: 12px;
+  color: #808080;
+  font-family: Century Gothic, sans-serif;
+  padding: 5px 8px 30px 8px !important;
+  text-align: left;
+  vertical-align: top;
+}
+
+.field-value-empty {
+  font-size: 12px;
+  color: #333;
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 8px 30px 8px !important;
+}
+
+.hour-label-small {
+  width: 10%;
+  font-size: 12px;
+  color: #808080;
+  font-family: Century Gothic, sans-serif;
+  text-align: center;
+  vertical-align: top;
+  padding: 5px 8px 30px 8px !important;
+}
+
+.hour-value-large {
+  width: 35%;
+  font-size: 12px;
+  color: #333;
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 8px 30px 8px !important;
+}
+
+.center-text {
+  text-align: center;
+  font-weight: bold;
+  color: #5a7db8;
+  margin: 10px 0 5px 0;
+  font-size: 12px;
+}
+
+/* Tabla principal del formulario */
+.form-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 5px 0; /* Bajar las celdas */
+  font-size: 10px;
+  font-family: Arial, sans-serif;
+}
+
+.form-table td {
+  border: 0.5px solid #888;
+  padding: 5px 8px 30px 8px;
+  vertical-align: top;
+  text-align: left;
+  line-height: 1.2;
+}
+
+/* Etiquetas de campos */
+.field-label {
+  width: 30%;
+  font-size: 12px;
+  color: #808080;
+  font-family: Century Gothic, sans-serif;
+  text-align: left;
+  vertical-align: top;
+}
+
+.field-value {
+  width: 70%;
+  font-size: 12px;
+  color: #333;
+  text-align: left;
+  vertical-align: top;
+}
+
+.field-value-centered {
+  width: 70%;
+  font-size: 11px;
+  color: #333;
+  text-align: left;
+  vertical-align: middle;
+}
+
+/* Clases para filas con 4 columnas */
+.field-label-4col {
+  width: 25%;
+  font-size: 8px; /* Reducido más */
+  color: #808080;
+  font-family: Century Gothic, sans-serif;
+  padding: 1px 3px 4px 3px !important; /* Más compacto */
+  text-align: left;
+  vertical-align: top;
+}
+
+.field-value-empty {
+  font-size: 8px; /* Reducido más */
+  color: #333;
+  text-align: left;
+  vertical-align: top;
+  padding: 1px 3px 4px 3px !important; /* Más compacto */
+}
+
+.hour-label-small {
+  width: 7%;
+  font-size: 9px; /* Reducido */
+  color: #808080;
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px 4px 8px 4px !important; /* Más compacto */
+}
+
+.hour-value-large {
+  width: 38%;
+  font-size: 9px; /* Reducido */
+  color: #333;
+  text-align: left;
+  vertical-align: top;
+}
+
+.center-text {
+  text-align: center;
+  font-weight: bold;
+  color: #5a7db8;
+  margin: 10px 0 5px 0;
+  font-size: 12px;
+}
+
+/* Estilos para impresión */
+@media print {
+  .ficha-umsnh-container {
+    width: 100%;
+    margin: 0;
+    padding: 15mm;
+    box-shadow: none;
+    page-break-inside: avoid;
+    border: none;
+  }
+  
+  .form-table td {
+    border: 0.5px solid #000;
+  }
+  
+  .fecha-envio td {
+    border: 0.5px solid #000;
+  }
+}
+
+/* Responsivo para pantallas pequeñas */
+@media (max-width: 768px) {
+  .ficha-umsnh-container {
+    width: 100%;
+    padding: 10px;
+    height: auto;
+    max-height: none;
+  }
+  
+  .facultad h1 {
+    font-size: 16px;
+    text-align: center;
+    transform: none;
+  }
+  
+  .fecha-envio-container {
+    justify-content: center;
+  }
+  
+  .fecha-envio {
+    width: 70%;
+  }
+  
+  .form-table {
+    font-size: 9px;
+  }
+  
+  .field-label,
+  .field-label-4col {
+    font-size: 10px;
+  }
+  
+  .field-value,
+  .field-value-empty,
+  .hour-value-large {
+    font-size: 10px;
+  }
+}
+
+/* Estilos para la vista previa con zoom */
+.preview-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.preview-modal-content {
+  width: 95vw;
+  height: 95vh;
+  background: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preview-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: #2c3e50;
+  color: white;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.btn-primary.modal-btn {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-primary.modal-btn:hover {
+  background: #2ecc71;
+}
+
+.btn-secondary.modal-btn {
+  background: #f39c12;
+  color: white;
+}
+
+.btn-secondary.modal-btn:hover {
+  background: #e67e22;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zoom-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.zoom-btn:hover {
+  background: #2980b9;
+}
+
+.zoom-btn.reset {
+  background: #e74c3c;
+}
+
+.zoom-btn.reset:hover {
+  background: #c0392b;
+}
+
+.zoom-level {
+  color: white;
+  font-weight: bold;
+  min-width: 50px;
+  text-align: center;
+}
+
+.close-preview-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.close-preview-btn:hover {
+  background: #c0392b;
+}
+
+.preview-container {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: #e8e8e8;
+}
+
+.preview-content {
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
+/* Ajustes para pantallas pequeñas */
+@media (max-width: 768px) {
+  .preview-modal-content {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+  
+  .preview-controls {
+    padding: 8px 15px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .zoom-controls {
+    gap: 8px;
+    justify-content: center;
+  }
+  
+  .modal-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .zoom-btn,
+  .modal-btn,
+  .close-preview-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+  
+  .preview-container {
+    padding: 10px;
+  }
+}
+
+/* Nuevos estilos para elementos específicos */
+.footer-signature {
+  margin-top: 15px; /* Reducido para subir */
+  text-align: center;
+  padding-top: 5px; /* Menos padding */
+}
+
+.footer-line {
+  width: 150px;
+  border-top: 0.5px solid #333;
+  margin: 15px auto 5px auto;
+}
+
+.footer-text {
+  font-size: 10px; /* Más pequeño */
+  color: #333;
+  text-align: center;
+  font-family: Arial, sans-serif;
+  font-weight: normal; /* Sin bold */
+}
+
+.folio-control {
+  position: absolute;
+  bottom: 20px; /* Bajar más para vista previa */
+  left: 30%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #ff0000;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+}
+
+/* Regla específica para altura ultra compacta de todas las celdas */
+.a4-size .form-table td {
+  padding: 1px 3px 6px 3px !important; /* Ultra compacto */
+}

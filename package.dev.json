@@ -1,0 +1,23 @@
+{
+  "name": "siaf-project",
+  "version": "1.0.0",
+  "description": "Sistema SIAF - Gestión completa",
+  "scripts": {
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "cd server && npm run dev",
+    "client:dev": "cd client && npm start",
+    "server": "cd server && npm start",
+    "client": "cd client && npm start",
+    "build:client": "cd client && npm run build",
+    "setup:production": "npm run copy:env:production && npm run build:client",
+    "copy:env:production": "copy server\\.env.production server\\.env && copy client\\.env.production client\\.env",
+    "copy:env:development": "copy server\\.env.local server\\.env && copy client\\.env.local client\\.env"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "keywords": ["siaf", "sistema", "gestion"],
+  "author": "FCCA",
+  "license": "ISC"
+}

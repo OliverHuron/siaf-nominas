@@ -1,0 +1,520 @@
+/* ===== EMAILS VIEW STYLES ===== */
+@import url('../../styles/pages.css');
+
+.emails-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.emails-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.emails-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Auth Status */
+.auth-status {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-status.success {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 2px solid #10b981;
+}
+
+.auth-status.error {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border: 2px solid #ef4444;
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: white;
+  color: #3b82f6;
+  border: 2px solid #e2e8f0;
+}
+
+.btn-outline:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.btn-outline-danger {
+  background: white;
+  color: #ef4444;
+  border: 2px solid #fee2e2;
+}
+
+.btn-outline-danger:hover {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.btn-lg {
+  padding: 14px 28px;
+  font-size: 16px;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* Card */
+.email-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-body {
+  padding: 24px;
+}
+
+.card-body.text-center {
+  text-align: center;
+}
+
+/* Auth Setup */
+.auth-setup {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.auth-setup svg {
+  margin-bottom: 20px;
+}
+
+.auth-setup h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 20px 0 12px 0;
+}
+
+.auth-setup p {
+  font-size: 15px;
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.auth-help {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* User Info Card */
+.user-info-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.user-info svg {
+  font-size: 20px;
+  color: #3b82f6;
+}
+
+.user-info span {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.user-info small {
+  margin-left: auto;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* Form */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  transition: all 0.2s;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-control::placeholder {
+  color: #cbd5e1;
+}
+
+.message-textarea {
+  min-height: 150px;
+  line-height: 1.6;
+}
+
+.form-text {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+/* Email Lists */
+.email-lists {
+  margin-bottom: 20px;
+}
+
+.email-lists label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 12px;
+}
+
+.list-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* Advanced Settings */
+.advanced-settings {
+  margin: 24px 0;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.advanced-settings details {
+  cursor: pointer;
+}
+
+.advanced-settings summary {
+  padding: 14px 18px;
+  background: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.advanced-settings summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-settings summary::before {
+  content: '▶';
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.advanced-settings details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.advanced-settings summary:hover {
+  background: #f1f5f9;
+}
+
+.advanced-settings details[open] .form-group {
+  padding: 18px;
+  margin: 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Send Actions */
+.send-actions {
+  margin: 24px 0;
+}
+
+/* Strategy Info */
+.strategy-info {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 2px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 24px;
+}
+
+.strategy-info h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e40af;
+  margin: 0 0 16px 0;
+}
+
+.strategy-info ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.strategy-info li {
+  margin-bottom: 12px;
+  padding-left: 32px;
+  position: relative;
+  color: #1e40af;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.strategy-info li::before {
+  position: absolute;
+  left: 0;
+  font-size: 18px;
+}
+
+.strategy-info strong {
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  font-size: 16px;
+  color: #64748b;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .emails-container {
+    padding: 16px;
+  }
+
+  .emails-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .header-actions button,
+  .auth-status {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .user-info {
+    flex-wrap: wrap;
+  }
+
+  .user-info small {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .list-buttons {
+    flex-direction: column;
+  }
+
+  .list-buttons button {
+    width: 100%;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+
+  .strategy-info {
+    padding: 16px;
+  }
+
+  .strategy-info li {
+    padding-left: 28px;
+    font-size: 13px;
+  }
+}
+
+/* Dark scrollbar for textareas */
+.form-control::-webkit-scrollbar {
+  width: 8px;
+}
+
+.form-control::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.form-control::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.form-control::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ===== TEMPLATE MANAGER MODAL ===== */
+.template-manager-modal {
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.template-manager-modal .modal-body {
+  padding: 24px;
+}
+
+.templates-list {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.templates-list h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 16px;
+}
+
+.templates-list .data-table {
+  margin-top: 16px;
+}
+
+.templates-list .data-table td {
+  vertical-align: middle;
+}
+
+.templates-list .btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}

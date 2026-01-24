@@ -1,0 +1,65 @@
+/* FORZAR estilos de botones de inventario - MÁXIMA PRIORIDAD */
+
+/* Sobrescribir TODOS los selectores posibles */
+table button,
+table.table button,
+.table-container button,
+td button,
+tbody button,
+tr button,
+button[title="Ver detalles"],
+button[title="Editar"],
+button[title="Eliminar"] {
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  font-family: inherit !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  padding: 6px !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+  margin: 0 2px !important;
+}
+
+/* Botón Ver - AZUL */
+button[title="Ver detalles"] {
+  background: #dbeafe !important;
+  color: #000000 !important;
+  border: 3px solid #3b82f6 !important;
+}
+
+button[title="Ver detalles"]:hover {
+  background: #bfdbfe !important;
+  border-color: #2563eb !important;
+}
+
+/* Botón Editar - AMARILLO */
+button[title="Editar"] {
+  background: #fef3c7 !important;
+  color: #000000 !important;
+  border: 3px solid #f59e0b !important;
+}
+
+button[title="Editar"]:hover {
+  background: #fde68a !important;
+  border-color: #d97706 !important;
+}
+
+/* Botón Eliminar - ROJO */
+button[title="Eliminar"] {
+  background: #fecaca !important;
+  color: #000000 !important;
+  border: 3px solid #dc2626 !important;
+}
+
+button[title="Eliminar"]:hover {
+  background: #f87171 !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+}

@@ -1,0 +1,356 @@
+/* Estilos modernos para el modal de inventario */
+
+/* Ocultar contenido de fondo cuando el modal está abierto */
+body.modal-open {
+  overflow: hidden;
+}
+
+body.modal-open .inventory-page > *:not(.inventory-modal-overlay) {
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.inventory-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+.inventory-modal-content {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  max-width: 900px;
+  width: 90%;
+  max-height: 85vh;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+/* Header del modal */
+.inventory-modal-header {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: white;
+  padding: 24px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: none;
+}
+
+.inventory-modal-header h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.inventory-modal-header .modal-close {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.inventory-modal-header .modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+/* Body del modal */
+.inventory-modal-body {
+  padding: 32px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: #fafbfc;
+}
+
+/* Grid para formulario de edición */
+.inventory-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.inventory-form-grid .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.inventory-form-grid .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.inventory-form-grid .form-group.span-two-cols {
+  grid-column: span 2;
+}
+
+.inventory-view-grid .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.inventory-view-grid .inventory-view-group.span-two-cols {
+  grid-column: span 2;
+}
+
+.inventory-form-grid label {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 14px;
+  letter-spacing: 0.025em;
+}
+
+.inventory-form-grid .form-control {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
+  color: #374151;
+}
+
+.inventory-form-grid .form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: #fefeff;
+}
+
+.inventory-form-grid textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Grid para vista de solo lectura */
+.inventory-view-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.inventory-view-group {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.inventory-view-group:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.inventory-view-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.inventory-view-group label {
+  display: block;
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.inventory-view-value {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.inventory-view-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.025em;
+}
+
+.inventory-view-badge.buena {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+.inventory-view-badge.dañado {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+}
+
+.inventory-view-badge.defectuoso {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+}
+
+.inventory-view-badge.baja {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+/* Footer del modal */
+.inventory-modal-footer {
+  background: white;
+  padding: 24px 32px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.inventory-modal-footer .btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  border: 2px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inventory-modal-footer .btn-primary {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.inventory-modal-footer .btn-primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.inventory-modal-footer .btn-secondary {
+  background: white;
+  border-color: #d1d5db;
+  color: #6b7280;
+}
+
+.inventory-modal-footer .btn-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+/* Botón info para vista */
+.btn-info {
+  background: white !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+.btn-info:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+/* Scrollbar personalizada */
+.inventory-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.inventory-modal-body::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.inventory-modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.inventory-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .inventory-modal-content {
+    max-width: 95%;
+    margin: 20px;
+    max-height: 90vh;
+  }
+  
+  .inventory-modal-header {
+    padding: 20px 24px;
+  }
+  
+  .inventory-modal-header h3 {
+    font-size: 20px;
+  }
+  
+  .inventory-modal-body {
+    padding: 24px 20px;
+  }
+  
+  .inventory-form-grid,
+  .inventory-view-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .inventory-view-group {
+    padding: 12px;
+  }
+  
+  .inventory-modal-footer {
+    padding: 20px 24px;
+    flex-direction: column;
+  }
+  
+  .inventory-modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Animación de entrada */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.inventory-modal-content {
+  animation: modalFadeIn 0.3s ease-out;
+}

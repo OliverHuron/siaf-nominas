@@ -1,0 +1,764 @@
+/* ===== ATTENDANCE QUINCENAL VIEW STYLES ===== */
+@import url('../../styles/pages.css');
+
+.attendance-quincenal-container {
+  padding: 24px;
+  max-width: 1800px;
+  margin: 0 auto;
+}
+
+.attendance-quincenal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.attendance-quincenal-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-select {
+  padding: 8px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-select:hover {
+  border-color: #3b82f6;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: white;
+}
+
+.btn-outline {
+  background: white;
+  color: #3b82f6;
+  border: 2px solid #e2e8f0;
+}
+
+.btn-outline:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+/* Filtros visibles */
+.attendance-filters {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.filters-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.filter-input {
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  transition: all 0.2s;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-results {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  padding-top: 20px;
+}
+
+.filter-checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+/* Legend */
+.attendance-legend {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.legend-item svg {
+  font-size: 16px;
+}
+
+.icon-asistio {
+  color: #10b981;
+}
+
+.icon-falta {
+  color: #ef4444;
+}
+
+.icon-empty {
+  color: #cbd5e1;
+}
+
+.icon-sin-registrar {
+  color: #cbd5e1;
+}
+
+.legend-note {
+  margin: 0;
+  margin-left: auto;
+  font-size: 13px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Card */
+.attendance-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.card-body {
+  padding: 0;
+  position: relative;
+}
+
+/* Table Container */
+.table-container-quincenal {
+  overflow-x: auto;
+  max-height: 70vh;
+  position: relative;
+}
+
+.table-container-quincenal.expanded {
+  position: fixed !important;
+  top: 5vh !important;
+  left: 6.5vw !important;
+  transform: none !important;
+  width: 105vw !important;
+  max-height: 90vh !important;
+  /* Tamaño máximo del contenedor */
+  z-index: 1001;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.table-container-quincenal.expanded .attendance-table-quincenal {
+  width: 100%;
+  height: 100%;
+}
+
+.table-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  cursor: pointer;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Table */
+.attendance-table-quincenal {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  table-layout: fixed;
+  /* Asegura un diseño consistente para las celdas */
+}
+
+.attendance-table-quincenal th:first-child,
+.attendance-table-quincenal td:first-child {
+  width: 250px;
+  /* Ancho fijo para la columna del nombre del empleado */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attendance-table-quincenal th:nth-child(2),
+.attendance-table-quincenal td:nth-child(2) {
+  width: 150px;
+  /* Ancho fijo para la columna del estado */
+  text-align: center;
+}
+
+.attendance-table-quincenal th,
+.attendance-table-quincenal td {
+  text-align: center;
+  padding: 12px 8px;
+  overflow: hidden;
+}
+
+.attendance-table-quincenal tbody tr {
+  height: 50px;
+  /* Altura fija para las filas */
+}
+
+.attendance-table-quincenal thead {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.attendance-table-quincenal thead {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.table-container-quincenal.expanded .attendance-table-quincenal thead {
+  top: 0;
+  z-index: 10;
+}
+
+.attendance-table-quincenal th {
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 2px solid #0f172a;
+  white-space: nowrap;
+}
+
+.attendance-table-quincenal th.sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 101;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+.attendance-table-quincenal th.employee-col {
+  left: 0;
+  min-width: 200px;
+  text-align: left;
+  padding-left: 20px;
+}
+
+.attendance-table-quincenal th.status-col {
+  left: 200px;
+  min-width: 100px;
+}
+
+.mes-header {
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quincena-header {
+  font-size: 11px;
+  padding: 8px 12px !important;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.attendance-table-quincenal tbody {
+  display: block;
+  max-height: 90vh;
+  /* Altura máxima del cuerpo de la tabla */
+  overflow-y: auto;
+  /* Habilitar scroll cuando se alcance el máximo */
+}
+
+.attendance-table-quincenal tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  /* Asegura un diseño consistente */
+  height: 50px;
+  /* Altura fija para cada fila */
+}
+
+.attendance-table-quincenal thead {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.attendance-table-quincenal tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s;
+}
+
+.attendance-table-quincenal tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.attendance-table-quincenal td {
+  padding: 12px 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.attendance-table-quincenal td.employee-name,
+.attendance-table-quincenal td.employee-status {
+  position: sticky;
+  background: white;
+  z-index: 10;
+}
+
+.attendance-table-quincenal tbody tr:hover td.employee-name,
+.attendance-table-quincenal tbody tr:hover td.employee-status {
+  background-color: #f8fafc;
+}
+
+.employee-name {
+  left: 0;
+  text-align: left;
+  padding-left: 20px !important;
+  font-weight: 500;
+  color: #1e293b;
+  min-width: 200px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.employee-status {
+  left: 200px;
+  min-width: 100px;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.badge-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+/* Quincena Cells */
+.quincena-cell {
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+  user-select: none;
+  padding: 8px !important;
+}
+
+.quincena-cell:hover {
+  background-color: #f1f5f9 !important;
+  transform: scale(1.1);
+}
+
+.quincena-cell.empty {
+  color: #cbd5e1;
+}
+
+.quincena-cell.asistio {
+  color: #10b981;
+}
+
+.quincena-cell.falta {
+  color: #ef4444;
+}
+
+/* No Data */
+.no-data {
+  text-align: center;
+  padding: 40px 20px !important;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  font-size: 16px;
+  color: #64748b;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10002;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #94a3b8;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  padding: 20px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* Instructions Content */
+.instructions-content h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 24px 0 12px 0;
+}
+
+.instructions-content h4:first-child {
+  margin-top: 0;
+}
+
+.instructions-content ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #475569;
+  line-height: 1.8;
+}
+
+.instructions-content li {
+  margin-bottom: 8px;
+}
+
+.instructions-content strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* Modal Form */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.form-control {
+  padding: 10px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  transition: all 0.2s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-text {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.filter-summary {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.filter-summary p {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .attendance-quincenal-container {
+    padding: 16px;
+  }
+
+  .attendance-quincenal-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .header-actions button,
+  .header-actions select {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .attendance-legend {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .legend-note {
+    margin-left: 0;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    margin: 20px;
+  }
+}
+
+/* Load More Button */
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  padding: 32px 24px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-load-more {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid #3b82f6;
+  background: white;
+  color: #3b82f6;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.btn-load-more:hover:not(:disabled) {
+  background: #3b82f6;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btn-load-more:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
