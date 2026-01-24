@@ -1,0 +1,32 @@
+name: Deploy SIAF Automático
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Actualizar Código y Build en VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /var/www/SIAF
+            git pull origin main
+            
+            # Backend
+            cd server
+            npm install --production
+            
+            # Frontend
+            cd ../client
+            npm install
+            npm run build
+            
+            # Reiniciar servicio (Ajusta si usas PM2)
+            pm2 restart SIAF
