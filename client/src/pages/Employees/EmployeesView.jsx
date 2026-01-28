@@ -34,7 +34,7 @@ const EmployeesView = () => {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-
+  
   const [formData, setFormData] = useState({
     nombre: '',
     apellido_paterno: '',
@@ -53,6 +53,125 @@ const EmployeesView = () => {
     fetchStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, filterUR, filterSubtipo, filterActivo]);
+
+  // Estado para el job de importación en background
+  const [importJobId, setImportJobId] = useState(null);
+  const [importProgress, setImportProgress] = useState({ 
+    processed: 0, 
+    total: 0, 
+    imported: 0, 
+    failed: 0, 
+    progress: 0,
+    status: 'idle' 
+  });
+
+  // Polling del estado del job
+  useEffect(() => {
+    let intervalId;
+
+    if (importJobId) {
+      intervalId = setInterval(async () => {
+        try {
+          const response = await api.get(`/api/import-jobs/status/${importJobId}`);
+          const jobStatus = response.data.data;
+
+          setImportProgress({
+            processed: jobStatus.processedRows,
+            total: jobStatus.totalRows,
+            imported: jobStatus.importedRows,
+            failed: jobStatus.failedRows,
+            progress: jobStatus.progress,
+            status: jobStatus.status,
+            errors: jobStatus.errors
+          });
+
+          if (jobStatus.status === 'completed' || jobStatus.status === 'failed') {
+            clearInterval(intervalId);
+            setImporting(false);
+            setImportJobId(null);
+            
+            if (jobStatus.status === 'completed') {
+              toast.success(`Importación completada: ${jobStatus.importedRows} importados, ${jobStatus.failedRows} fallidos`);
+              setImportResult({
+                success: true,
+                message: `Proceso completado`,
+                imported: jobStatus.importedRows,
+                failed: jobStatus.failedRows,
+                errors: jobStatus.errors
+              });
+              fetchEmployees();
+              fetchStats();
+            } else {
+              toast.error('La importación falló');
+              setImportResult({
+                success: false,
+                message: 'Error en el proceso de importación',
+                errors: jobStatus.errors
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error polling job status:', error);
+        }
+      }, 2000); // Poll every 2 seconds
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [importJobId]);
+
+  const handleImportExcel = async () => {
+    if (!selectedFile) {
+      toast.error('Selecciona un archivo Excel');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      setImporting(true);
+      setImportResult(null); // Reset previous results
+      
+      const response = await api.post('/api/employees/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        timeout: 600000 // 10 minutes timeout
+      });
+
+      if (response.data.async) {
+        // Start polling
+        setImportJobId(response.data.jobId);
+        toast.info('Importación iniciada en segundo plano. Por favor espere...');
+        setImportProgress({
+          processed: 0,
+          total: response.data.totalRows,
+          imported: 0,
+          failed: 0,
+          progress: 0,
+          status: 'processing'
+        });
+      } else {
+        // Sincrono (fallback)
+        setImportResult(response.data);
+        toast.success(response.data.message);
+        setImporting(false);
+
+        if (response.data.imported > 0) {
+          fetchEmployees();
+          fetchStats();
+        }
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      const errorData = error.response?.data;
+      setImportResult(errorData || { success: false, message: 'Error al importar empleados' });
+      toast.error(errorData?.message || 'Error al importar empleados');
+      setImporting(false);
+    }
+  };
 
 
 
@@ -255,38 +374,7 @@ const EmployeesView = () => {
     }
   };
 
-  const handleImportExcel = async () => {
-    if (!selectedFile) {
-      toast.error('Selecciona un archivo Excel');
-      return;
-    }
 
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-
-    try {
-      setImporting(true);
-      const response = await api.post('/api/employees/import', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      setImportResult(response.data);
-      toast.success(response.data.message);
-
-      if (response.data.imported > 0) {
-        fetchEmployees();
-        fetchStats();
-      }
-    } catch (error) {
-      const errorData = error.response?.data;
-      setImportResult(errorData || { success: false, message: 'Error al importar empleados' });
-      toast.error(errorData?.message || 'Error al importar empleados');
-    } finally {
-      setImporting(false);
-    }
-  };
 
   const closeImportModal = () => {
     setShowImportModal(false);
@@ -715,6 +803,33 @@ const EmployeesView = () => {
                   </div>
                 )}
               </div>
+
+              {/* Progress UI */}
+              {importJobId && (
+                <div className="import-progress-container" style={{ margin: '20px 0', padding: '15px', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span style={{ fontWeight: 'bold' }}>Procesando importación...</span>
+                    <span>{importProgress.progress}%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '10px', backgroundColor: '#f0f0f0', borderRadius: '5px', overflow: 'hidden' }}>
+                    <div 
+                      style={{ 
+                        width: `${importProgress.progress}%`, 
+                        height: '100%', 
+                        backgroundColor: '#4a90e2', 
+                        transition: 'width 0.3s ease' 
+                      }} 
+                    />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '0.9em', color: '#666' }}>
+                    <span>Procesados: {(importProgress?.processed || 0).toLocaleString()} / {(importProgress?.total || 0).toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '15px', marginTop: '5px', fontSize: '0.85em' }}>
+                    <span style={{ color: '#28a745' }}>✅ Importados: {(importProgress?.imported || 0).toLocaleString()}</span>
+                    <span style={{ color: '#dc3545' }}>❌ Fallidos: {(importProgress?.failed || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
 
               {importResult && (
                 <div className={`import-result ${importResult.success ? 'success' : 'error'}`}>

@@ -7,12 +7,65 @@ const XLSX = require('xlsx');
  */
 const parseEmployeesFromExcel = (fileBuffer) => {
     try {
-        const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+        console.log('[PARSE_EXCEL] Starting parse, buffer size:', fileBuffer.length);
+        
+        // Try reading with cellFormula and cellStyles disabled for better performance
+        const workbook = XLSX.read(fileBuffer, { 
+            type: 'buffer',
+            cellFormula: false,
+            cellStyles: false,
+            sheetStubs: false
+        });
+        
+        console.log('[PARSE_EXCEL] Workbook sheets:', workbook.SheetNames);
+        
+        if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+            console.log('[PARSE_EXCEL] No sheets found in workbook');
+            return {
+                success: false,
+                data: [],
+                errors: ['El archivo Excel no contiene hojas de datos']
+            };
+        }
+        
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
+        
+        if (!worksheet) {
+            console.log('[PARSE_EXCEL] Worksheet is undefined for sheet:', sheetName);
+            return {
+                success: false,
+                data: [],
+                errors: ['No se pudo leer la hoja de datos del archivo Excel']
+            };
+        }
+        
+        // Debug worksheet info
+        const range = worksheet['!ref'];
+        console.log('[PARSE_EXCEL] Worksheet range:', range);
+        
+        if (!range) {
+            console.log('[PARSE_EXCEL] Worksheet has no range (empty sheet)');
+            return {
+                success: false,
+                data: [],
+                errors: ['La hoja de Excel está vacía']
+            };
+        }
+        
+        // Try to see first few cells
+        console.log('[PARSE_EXCEL] Cell A1:', worksheet['A1']);
+        console.log('[PARSE_EXCEL] Cell A2:', worksheet['A2']);
+        console.log('[PARSE_EXCEL] Cell B1:', worksheet['B1']);
 
         // Convert to JSON with header row
-        const rawData = XLSX.utils.sheet_to_json(worksheet);
+        const rawData = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+        console.log('[PARSE_EXCEL] Rows found:', rawData.length);
+        
+        if (rawData.length > 0) {
+            console.log('[PARSE_EXCEL] First row columns:', Object.keys(rawData[0]));
+            console.log('[PARSE_EXCEL] First row sample:', JSON.stringify(rawData[0]).substring(0, 200));
+        }
 
         if (rawData.length === 0) {
             return {

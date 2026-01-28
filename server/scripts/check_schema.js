@@ -14,11 +14,12 @@ const checkSchema = async () => {
     const client = await pool.connect();
     try {
         const res = await client.query(`
-            SELECT column_name, is_nullable, data_type 
+            SELECT column_name, data_type, character_maximum_length 
             FROM information_schema.columns 
-            WHERE table_name = 'inventario'
+            WHERE table_name = 'empleados' 
+            AND column_name IN ('tipo', 'estatus', 'subtipo_administrativo', 'unidad_responsable', 'telefono')
         `);
-        console.table(res.rows);
+        console.log(JSON.stringify(res.rows, null, 2));
     } catch (e) {
         console.error(e);
     } finally {

@@ -8,9 +8,61 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth.middleware');
 const inventoryController = require('../controllers/inventoryController');
 const inventoryWorkflowService = require('../services/inventoryWorkflow.service');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// =====================================================
+// CONFIGURACIÓN DE UPLOAD (MULTER)
+// =====================================================
+
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure disk storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'inv-import-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos Excel (.xlsx, .xls)'));
+    }
+  }
+});
+
+const handleMulterError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ success: false, message: `Error de archivo: ${err.message}` });
+  }
+  if (err) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+  next();
+};
 
 // Todas las rutas requieren autenticación
 router.use(authenticateToken);
+router.get('/template', inventoryController.downloadTemplate);
+router.post('/import', upload.single('file'), handleMulterError, inventoryController.importInventoryFromExcel);
 
 // =====================================================
 // RUTAS DE WORKFLOW

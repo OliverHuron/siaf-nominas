@@ -39,7 +39,7 @@ const Login = () => {
       <div className="login-container">
         <div className="login-header">
           <h1>SIAF</h1>
-          <p>Sistema Integral de Administración Facultaria</p>
+          <p>Sistema Integral de Administración Facultativa</p>
         </div>
 
         <div className="login-form-container">

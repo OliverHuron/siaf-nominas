@@ -77,8 +77,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ charset: 'utf-8' }));
-app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
+app.use(express.json({ charset: 'utf-8', limit: '500mb' }));
+app.use(express.urlencoded({ extended: true, charset: 'utf-8', limit: '500mb' }));
 
 // Routes
 const authRoutes = require('./routes/auth.routes');
@@ -98,6 +98,8 @@ const gmailRoutes = require('./routes/gmail.routes');
 const emailTemplateRoutes = require('./routes/emailTemplate.routes');
 const spacesRoutes = require('./routes/spaces.routes');
 const nominaRoutes = require('./routes/nomina.routes');
+const loadTestRoutes = require('./routes/loadtest.routes');
+const importJobRoutes = require('./routes/importJob.routes');
 const realtimeUtil = require('./utils/realtime');
 
 app.use('/api/auth', authRoutes);
@@ -107,6 +109,7 @@ app.use('/api/coordinaciones', coordinacionesRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/import-jobs', importJobRoutes);
 app.use('/api/technical-forms', technicalFormRoutes);
 app.use('/api/fichas-tecnicas', fichaTecnicaRoutes);
 app.use('/api/dependencies', dependencyRoutes);
@@ -117,6 +120,7 @@ app.use('/api/gmail', gmailRoutes);
 app.use('/api/email-templates', emailTemplateRoutes);
 app.use('/api/spaces', spacesRoutes);
 app.use('/api/nomina', nominaRoutes);
+app.use('/api/loadtest', loadTestRoutes);
 
 // SSE endpoint for spaces/audit realtime updates
 app.get('/api/realtime/spaces', (req, res) => {

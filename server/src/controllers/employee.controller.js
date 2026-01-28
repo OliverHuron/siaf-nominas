@@ -1,6 +1,75 @@
 const db = require('../config/database');
 const { parseEmployeesFromExcel, generateEmployeeTemplate } = require('../services/employee.service');
 
+// Background processing function with batch inserts
+async function processImportInBackground(employees, job) {
+  const BATCH_SIZE = 1000; // Process 1000 records at a time
+  let totalImported = 0;
+  let totalFailed = 0;
+  const allErrors = [];
+
+  console.log(`[BACKGROUND_IMPORT] Starting batch processing for ${employees.length} employees`);
+
+  for (let i = 0; i < employees.length; i += BATCH_SIZE) {
+    const batch = employees.slice(i, i + BATCH_SIZE);
+    const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+    const totalBatches = Math.ceil(employees.length / BATCH_SIZE);
+
+    console.log(`[BACKGROUND_IMPORT] Processing batch ${batchNumber}/${totalBatches} (${batch.length} records)`);
+
+    try {
+      // Build bulk insert query
+      const values = [];
+      const params = [];
+      let paramIndex = 1;
+
+      batch.forEach((emp) => {
+        const rowPlaceholders = [];
+        for (let j = 0; j < 11; j++) {
+          rowPlaceholders.push(`$${paramIndex++}`);
+        }
+        values.push(`(${rowPlaceholders.join(', ')})`);
+        
+        params.push(
+          emp.nombre, emp.apellido_paterno, emp.apellido_materno, emp.rfc,
+          emp.email, emp.telefono, emp.tipo, emp.dependencia_id, emp.activo,
+          emp.unidad_responsable, emp.subtipo_administrativo
+        );
+      });
+
+      const query = `
+        INSERT INTO empleados 
+        (nombre, apellido_paterno, apellido_materno, rfc, email, telefono, 
+         tipo, dependencia_id, activo, unidad_responsable, subtipo_administrativo)
+        VALUES ${values.join(', ')}
+        ON CONFLICT (rfc) DO NOTHING
+        RETURNING id
+      `;
+
+      const result = await db.query(query, params);
+      const imported = result.rowCount;
+      const failed = batch.length - imported;
+
+      totalImported += imported;
+      totalFailed += failed;
+
+      // Update job progress
+      job.updateProgress(i + batch.length, totalImported, totalFailed);
+
+      console.log(`[BACKGROUND_IMPORT] Batch ${batchNumber} complete: ${imported} imported, ${failed} failed`);
+    } catch (error) {
+      console.error(`[BACKGROUND_IMPORT] Batch ${batchNumber} error:`, error.message);
+      totalFailed += batch.length;
+      allErrors.push(`Batch ${batchNumber}: ${error.message}`);
+      job.updateProgress(i + batch.length, totalImported, totalFailed, [error.message]);
+    }
+  }
+
+  job.complete();
+  console.log(`[BACKGROUND_IMPORT] Import complete: ${totalImported} imported, ${totalFailed} failed`);
+}
+
+
 // Obtener todos los empleados con paginación por cursor
 const getAllEmployees = async (req, res) => {
   try {
@@ -469,9 +538,11 @@ const getEmployeeStats = async (req, res) => {
   }
 };
 
-// Importar empleados desde Excel
+// Importar empleados desde Excel (Streaming & Background)
 const importEmployeesFromExcel = async (req, res) => {
   try {
+    console.log('[IMPORT_EMPLOYEES] Starting import...');
+    
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -479,92 +550,188 @@ const importEmployeesFromExcel = async (req, res) => {
       });
     }
 
-    console.log('[IMPORT_EMPLOYEES] Processing Excel file:', req.file.originalname);
+    console.log('[IMPORT_EMPLOYEES] File saved to disk:', req.file.path);
 
-    // Parse Excel file
-    const parseResult = parseEmployeesFromExcel(req.file.buffer);
-
-    if (!parseResult.success || parseResult.data.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Error al procesar el archivo Excel',
-        errors: parseResult.errors,
-        imported: 0,
-        failed: parseResult.errors.length
-      });
-    }
-
-    console.log('[IMPORT_EMPLOYEES] Valid employees found:', parseResult.data.length);
-
-    // Check for duplicate RFCs in DB
-    const rfcs = parseResult.data.map(emp => emp.rfc);
-    const duplicateCheck = await db.query(
-      'SELECT rfc FROM empleados WHERE rfc = ANY($1)',
-      [rfcs]
-    );
-
-    const existingRFCs = duplicateCheck.rows.map(row => row.rfc);
-    const duplicateErrors = [];
-
-    // Filter out duplicates
-    const employeesToImport = parseResult.data.filter(emp => {
-      if (existingRFCs.includes(emp.rfc)) {
-        duplicateErrors.push(`RFC ${emp.rfc} ya existe en la base de datos`);
-        return false;
-      }
-      return true;
-    });
-
-    if (employeesToImport.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Todos los empleados ya existen en la base de datos',
-        errors: [...parseResult.errors, ...duplicateErrors],
-        imported: 0,
-        failed: parseResult.data.length
-      });
-    }
-
-    // Bulk insert
-    const insertPromises = employeesToImport.map(emp => {
-      return db.query(
-        `INSERT INTO empleados 
-         (nombre, apellido_paterno, apellido_materno, rfc, email, telefono, 
-          tipo, dependencia_id, activo, unidad_responsable, subtipo_administrativo)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-         RETURNING id, rfc`,
-        [emp.nombre, emp.apellido_paterno, emp.apellido_materno, emp.rfc,
-        emp.email, emp.telefono, emp.tipo, emp.dependencia_id, emp.activo,
-        emp.unidad_responsable, emp.subtipo_administrativo]
-      );
-    });
-
-    const results = await Promise.allSettled(insertPromises);
-
-    const imported = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
-    const insertErrors = results
-      .filter(r => r.status === 'rejected')
-      .map(r => r.reason.message);
-
-    console.log('[IMPORT_EMPLOYEES] Import complete:', { imported, failed });
+    // Generate unique job ID
+    const { v4: uuidv4 } = require('uuid');
+    const jobId = uuidv4();
+    
+    const { importJobs, ImportJob } = require('../services/importJob.service');
+    // Initialize job with unknown total rows initially
+    const job = new ImportJob(jobId, 0); 
+    importJobs.set(jobId, job);
 
     res.json({
       success: true,
-      message: `Importación completada: ${imported} empleados importados`,
-      imported: imported,
-      failed: failed + duplicateErrors.length,
-      errors: [...parseResult.errors, ...duplicateErrors, ...insertErrors]
+      message: 'Importación iniciada en segundo plano',
+      jobId: jobId,
+      async: true
     });
+
+    // Process in background using Stream
+    processExcelStream(req.file.path, job).catch(error => {
+      console.error('[IMPORT_EMPLOYEES] Background stream error:', error);
+      job.fail(error.message);
+      // Clean up file if error
+      const fs = require('fs');
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    });
+
   } catch (error) {
     console.error('Error en importEmployeesFromExcel:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al importar empleados',
-      error: error.message
+      message: 'Error interno al iniciar importación'
     });
   }
 };
+
+// Streaming Processor using ExcelJS
+async function processExcelStream(filePath, job) {
+  const ExcelJS = require('exceljs');
+  const fs = require('fs');
+  
+  console.log('[STREAM] Starting Excel stream processing:', filePath);
+  
+  const workbook = new ExcelJS.stream.xlsx.WorkbookReader(filePath, {
+    worksheets: 'emit',
+    sharedStrings: 'cache',
+    hyperlinks: 'ignore',
+    styles: 'ignore'
+  });
+
+  let totalRows = 0;
+  let batch = [];
+  const BATCH_SIZE = 1000;
+  let headers = null;
+
+  try {
+    for await (const worksheetReader of workbook) {
+      console.log('[STREAM] Reading worksheet:', worksheetReader.name);
+      
+      for await (const row of worksheetReader) {
+        // Skip empty rows
+        if (!row.values || row.values.length === 0) continue;
+
+        // Extract values (ExcelJS rows are 1-based, values array has empty 0 index)
+        const rowValues = row.values.slice(1); // Remove first empty element if present
+
+        if (!headers) {
+          headers = rowValues;
+          console.log('[STREAM] Headers found:', headers);
+          continue;
+        }
+
+        // Map row to object
+        const employee = mapRowToEmployee(rowValues, headers);
+        
+        if (employee && employee.rfc) {
+           batch.push(employee);
+           totalRows++;
+           
+           // Update job total dynamically as we find rows
+           job.totalRows = totalRows; 
+        }
+
+        // Process batch
+        if (batch.length >= BATCH_SIZE) {
+          await processBatch(batch, job);
+          batch = [];
+        }
+      }
+    }
+
+    // Process final batch
+    if (batch.length > 0) {
+      await processBatch(batch, job);
+    }
+
+    job.complete();
+    console.log('[STREAM] Import complete successfully');
+
+  } catch (error) {
+    console.error('[STREAM] Error processing stream:', error);
+    job.fail(error.message);
+  } finally {
+    // Delete temp file
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log('[STREAM] Temp file deleted');
+    }
+  }
+}
+
+function mapRowToEmployee(rowValues, headers) {
+  // Simple mapping based on index or header name matching
+  // Assuming standard template order or finding index
+  // For robustness, let's map by header name if possible, or fallback to index
+  
+  const getVal = (headerName, defaultVal = null) => {
+    const idx = headers.findIndex(h => h && h.toString().toLowerCase().includes(headerName.toLowerCase()));
+    if (idx !== -1 && rowValues[idx] !== undefined) return rowValues[idx];
+    return defaultVal;
+  };
+
+  const rfc = getVal('rfc');
+  if (!rfc) return null;
+
+  return {
+    nombre: getVal('nombre', ''),
+    apellido_paterno: getVal('paterno', '') || getVal('apellido paterno', ''),
+    apellido_materno: getVal('materno', '') || getVal('apellido materno', ''),
+    rfc: String(rfc).toUpperCase().trim(),
+    email: getVal('email', ''),
+    telefono: getVal('tel', '') || getVal('teléfono', ''),
+    tipo: getVal('tipo', 'docente').toLowerCase(),
+    unidad_responsable: getVal('unidad', null),
+    subtipo_administrativo: getVal('subtipo', null),
+    activo: true,
+    dependencia_id: null
+  };
+}
+
+async function processBatch(batch, job) {
+  // Reuse the exact same bulk insert logic
+  // ... (Insert logic here, simplified for brevity but robust)
+  try {
+      const values = [];
+      const params = [];
+      let paramIndex = 1;
+
+      batch.forEach((emp) => {
+        const rowPlaceholders = [];
+        for (let j = 0; j < 11; j++) {
+          rowPlaceholders.push(`$${paramIndex++}`);
+        }
+        values.push(`(${rowPlaceholders.join(', ')})`);
+        
+        params.push(
+          emp.nombre, emp.apellido_paterno, emp.apellido_materno, emp.rfc,
+          emp.email, emp.telefono, emp.tipo, emp.dependencia_id, emp.activo,
+          emp.unidad_responsable, emp.subtipo_administrativo
+        );
+      });
+
+      // Insert and capture inserted IDs
+      const query = `
+        INSERT INTO empleados 
+        (nombre, apellido_paterno, apellido_materno, rfc, email, telefono, 
+         tipo, dependencia_id, activo, unidad_responsable, subtipo_administrativo)
+        VALUES ${values.join(', ')}
+        ON CONFLICT (rfc) DO NOTHING
+        RETURNING id
+      `;
+
+      const result = await db.query(query, params);
+      const imported = result.rowCount;
+      const failed = batch.length - imported; // Actually "duplicates skipped"
+
+      job.updateProgress(job.processedRows + batch.length, job.importedRows + imported, job.failedRows + failed);
+  } catch (err) {
+      console.error('Batch insert error:', err);
+      job.updateProgress(job.processedRows + batch.length, job.importedRows, job.failedRows + batch.length, [err.message]);
+  }
+}
 
 // Descargar plantilla Excel
 const downloadTemplate = (req, res) => {

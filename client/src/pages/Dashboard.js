@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaBoxes, FaUsers, FaFileAlt, FaExclamationTriangle, FaCheckCircle, FaClock, FaChartLine, FaArrowUp, FaArrowDown } from 'react-icons/fa';
+import { FaBoxes, FaUsers, FaFileAlt, FaExclamationTriangle, FaCheckCircle, FaClock, FaChartLine, FaArrowUp, FaArrowDown, FaTachometerAlt } from 'react-icons/fa';
 import api from '../services/api';
 import './Dashboard.css';
 
@@ -339,6 +339,10 @@ const Dashboard = () => {
               <a href="/fichas-tecnicas" className="quick-link">
                 <FaChartLine />
                 <span>Fichas Técnicas</span>
+              </a>
+              <a href="/loadtest" className="quick-link">
+                <FaTachometerAlt />
+                <span>Load Testing</span>
               </a>
             </div>
           </div>

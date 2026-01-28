@@ -8,8 +8,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
   FaPlus, FaEye, FaEdit, FaTrash, FaSearch, FaFilter,
-  FaDownload, FaSync, FaCheckCircle, FaExclamationCircle
+  FaDownload, FaSync, FaCheckCircle, FaExclamationCircle,
+  FaFileExcel, FaUpload
 } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import { saveAs } from 'file-saver';
 import InventoryForm from './InventoryForm';
 import InventoryDrawer from './InventoryDrawer';
 import UniversalSkeleton from '../../components/UniversalSkeleton';
@@ -35,6 +38,15 @@ const InventoryView = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [drawerItem, setDrawerItem] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Estados para Importación
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const [importJobId, setImportJobId] = useState(null);
+  const [importProgress, setImportProgress] = useState({ progress: 0, processed: 0, total: 0, imported: 0, failed: 0 });
+  const [isDragging, setIsDragging] = useState(false);
 
   // Estados para filtros
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +77,49 @@ const InventoryView = () => {
     loadInventory(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, searchTerm]);
+
+  // Polling para el trabajo de importación
+  useEffect(() => {
+    let interval;
+    if (importJobId && importing) {
+      interval = setInterval(async () => {
+        try {
+          const response = await api.get(`/api/import-jobs/status/${importJobId}`);
+          if (response.data && response.data.success) {
+            const job = response.data.data;
+            setImportProgress({
+              progress: job.progress,
+              processed: job.processed,
+              total: job.totalRows,
+              imported: job.imported,
+              failed: job.failed
+            });
+
+            if (job.status === 'completed' || job.status === 'failed') {
+              setImporting(false);
+              setImportResult({
+                success: job.status === 'completed',
+                message: job.status === 'completed' ? 'Importación completada' : 'Importación fallida',
+                imported: job.imported,
+                failed: job.failed,
+                errors: job.errors
+              });
+              setImportJobId(null);
+              if (job.status === 'completed') {
+                toast.success('Importación completada exitosamente');
+                loadInventory();
+              } else {
+                toast.error('La importación finalizó con errores');
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error polling import status:', error);
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [importJobId, importing]);
 
   const loadInventory = async (reset = true) => {
     try {
@@ -213,6 +268,122 @@ const InventoryView = () => {
   };
 
   // =====================================================
+  // HANDLERS DE IMPORTACIÓN
+  // =====================================================
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+                      file.type === 'application/vnd.ms-excel' ||
+                      file.name.endsWith('.xlsx') || 
+                      file.name.endsWith('.xls');
+
+      if (!isExcel) {
+        toast.error('Por favor selecciona un archivo Excel válido (.xlsx, .xls)');
+        return;
+      }
+      setSelectedFile(file);
+      setImportResult(null);
+      setImportProgress({ progress: 0, processed: 0, total: 0, imported: 0, failed: 0 });
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+                      file.type === 'application/vnd.ms-excel' ||
+                      file.name.endsWith('.xlsx') || 
+                      file.name.endsWith('.xls');
+
+      if (!isExcel) {
+        toast.error('Por favor selecciona un archivo Excel válido (.xlsx, .xls)');
+        return;
+      }
+      setSelectedFile(file);
+      setImportResult(null);
+      setImportProgress({ progress: 0, processed: 0, total: 0, imported: 0, failed: 0 });
+    }
+  };
+
+  const handleImportExcel = async () => {
+    if (!selectedFile) return;
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      setImporting(true);
+      setImportResult(null);
+      
+      // Aumentar timeout para subida de archivos grandes
+      const response = await api.post('/api/inventory/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        timeout: 600000 // 10 minutos
+      });
+
+      if (response.data.success) {
+        setImportJobId(response.data.jobId);
+        toast.info('Importación iniciada en segundo plano...');
+      } else {
+        setImporting(false);
+        setImportResult({
+          success: false,
+          message: response.data.message || 'Error al iniciar importación',
+          errors: response.data.errors || []
+        });
+      }
+    } catch (error) {
+      console.error('Error importing excel:', error);
+      setImporting(false);
+      setImportResult({
+        success: false,
+        message: error.response?.data?.message || 'Error al importar archivo',
+        errors: [error.message]
+      });
+      toast.error('Error al iniciar la importación');
+    }
+  };
+
+  const closeImportModal = () => {
+    if (importing) {
+      if (!window.confirm('La importación está en progreso. ¿Seguro que deseas cerrar? Se continuará en segundo plano.')) {
+        return;
+      }
+    }
+    setShowImportModal(false);
+    setSelectedFile(null);
+    setImportResult(null);
+    setImportJobId(null);
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await api.get('/api/inventory/template', { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'Plantilla_Inventario.xlsx');
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      toast.error('Error al descargar la plantilla');
+    }
+  };
+
+  // =====================================================
   // HELPERS DE RENDERIZADO
   // =====================================================
 
@@ -287,6 +458,11 @@ const InventoryView = () => {
           <button className="btn-secondary" onClick={loadInventory}>
             <FaSync /> Actualizar
           </button>
+          
+          <button className="btn-secondary import-btn" onClick={() => setShowImportModal(true)} style={{ backgroundColor: '#217346', color: 'white', borderColor: '#1e6b41' }}>
+            <FaFileExcel /> Importar Excel
+          </button>
+
           {canEdit && (
             <button className="btn-primary" onClick={handleCreate}>
               <FaPlus /> Nuevo Activo
@@ -524,6 +700,127 @@ const InventoryView = () => {
           >
             {loadingMore ? 'Cargando...' : `Cargar Más (${items.length} cargados)`}
           </button>
+        </div>
+      )}
+
+      {/* MODAL DE IMPORTACIÓN */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={closeImportModal}>
+          <div className="modal-content import-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><FaFileExcel /> Importar Inventario desde Excel</h2>
+              <button className="modal-close" onClick={closeImportModal}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="import-instructions">
+                <p><strong>Instrucciones:</strong></p>
+                <ol>
+                  <li>El archivo debe contener la columna <strong>Folio</strong> (Obligatorio y Único).</li>
+                  <li>Columnas soportadas: Marca, Modelo, Serie, Ubicación, Descripción, Costo, Proveedor.</li>
+                  <li>Arrastra el archivo abajo para comenzar.</li>
+                </ol>
+              </div>
+
+              <div
+                className={`file-upload-zone ${isDragging ? 'dragging' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <FaUpload className="upload-icon" />
+                <p>Arrastra y suelta tu archivo Excel aquí</p>
+                <p className="upload-or">o</p>
+                <label htmlFor="file-input-inv" className="btn-primary">
+                  Seleccionar Archivo
+                </label>
+                <input
+                  id="file-input-inv"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+                {selectedFile && (
+                  <div className="selected-file">
+                    <FaFileExcel /> {selectedFile.name}
+                  </div>
+                )}
+              </div>
+
+              {/* Progress UI */}
+              {importJobId && (
+                <div className="import-progress-container" style={{ margin: '20px 0', padding: '15px', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span style={{ fontWeight: 'bold' }}>Procesando importación...</span>
+                    <span>{importProgress.progress}%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '10px', backgroundColor: '#f0f0f0', borderRadius: '5px', overflow: 'hidden' }}>
+                    <div 
+                      style={{ 
+                        width: `${importProgress.progress}%`, 
+                        height: '100%', 
+                        backgroundColor: '#4a90e2', 
+                        transition: 'width 0.3s ease' 
+                      }} 
+                    />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '0.9em', color: '#666' }}>
+                    <span>Procesados: {(importProgress?.processed || 0).toLocaleString()} / {(importProgress?.total || 0).toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '15px', marginTop: '5px', fontSize: '0.85em' }}>
+                    <span style={{ color: '#28a745' }}>✅ Importados: {(importProgress?.imported || 0).toLocaleString()}</span>
+                    <span style={{ color: '#dc3545' }}>❌ Fallidos: {(importProgress?.failed || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+
+              {importResult && (
+                <div className={`import-result ${importResult.success ? 'success' : 'error'}`}>
+                  <h4>{importResult.message}</h4>
+                  <div className="import-stats">
+                    <div className="stat-item success">
+                      <strong>Importados:</strong> {importResult.imported || 0}
+                    </div>
+                    <div className="stat-item error">
+                      <strong>Fallidos:</strong> {importResult.failed || 0}
+                    </div>
+                  </div>
+                  {importResult.errors && importResult.errors.length > 0 && (
+                    <div className="import-errors">
+                      <h5>Errores encontrados:</h5>
+                      <ul>
+                        {importResult.errors.slice(0, 10).map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                        {importResult.errors.length > 10 && (
+                          <li>... y {importResult.errors.length - 10} errores más</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="left-actions">
+                <button className="btn-secondary" onClick={handleDownloadTemplate}>
+                  <FaDownload /> Descargar Plantilla
+                </button>
+              </div>
+              <div className="right-actions" style={{ display: 'flex', gap: '10px' }}>
+                <button className="btn-secondary" onClick={closeImportModal}>
+                  Cerrar
+                </button>
+                <button
+                  className="btn-primary"
+                  onClick={handleImportExcel}
+                  disabled={!selectedFile || importing}
+                >
+                  {importing ? 'Importando...' : 'Importar'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

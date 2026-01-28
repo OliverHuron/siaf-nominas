@@ -28,6 +28,7 @@ import Spaces from './pages/Spaces';
 import RealtimeDashboard from './pages/RealtimeDashboard';
 import ControlInterno from './pages/ControlInterno';
 import Confirmation from './pages/Confirmation';
+import LoadTest from './pages/LoadTest';
 
 import './App.css';
 import Privacy from './pages/Privacy';
@@ -61,6 +62,7 @@ function App() {
               <Route path="classrooms" element={<Classrooms />} />
               <Route path="spaces" element={<Spaces />} />
               <Route path="control-interno" element={<ControlInterno />} />
+              <Route path="loadtest" element={<LoadTest />} />
             </Route>
             <Route path="confirmation" element={<Confirmation />} />
           </Routes>
