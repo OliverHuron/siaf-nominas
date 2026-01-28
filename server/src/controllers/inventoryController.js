@@ -8,6 +8,7 @@ const { pool } = require('../config/database');
 const InventoryService = require('../services/inventoryService');
 const ImportJob = require('../services/importJob.service').ImportJob;
 const importJobs = require('../services/importJob.service').importJobs;
+// Force git sync - Inventory Module
 const fs = require('fs');
 const path = require('path');
 const ExcelJS = require('exceljs');
