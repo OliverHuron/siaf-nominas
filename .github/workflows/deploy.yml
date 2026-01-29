@@ -18,18 +18,21 @@ jobs:
           script: |
             # Definir la ruta de Node y NPM manualmente para esta sesión
             export PATH=$PATH:/root/.nvm/versions/node/v24.11.1/bin
-            
+
             cd /var/www/SIAF
+            # Forzar sincronización exacta con el repositorio (elimina cambios manuales en VPS)
+            git fetch --all
+            git reset --hard origin/main
             git pull origin main
-            
+
             # Backend
             cd server
             npm install --production
-            
+
             # Frontend
             cd ../client
             npm install
             npm run build
-            
+
             # Reiniciar con PM2 usando el nombre de tu proceso
             pm2 restart siaf-backend || pm2 start src/index.js --name siaf-backend
