@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FaBox, FaUser, FaFileInvoiceDollar, FaSave, FaTimes } from 'react-icons/fa';
+import { FaSave, FaTimes, FaCloudUploadAlt, FaImage } from 'react-icons/fa';
 import api from '../../services/api';
 import './InventoryForm.css';
 
@@ -22,7 +22,7 @@ const baseFields = {
   numero_serie: z.string().nullable().optional(),
   numero_patrimonio: z.string().nullable().optional(),
   estado: z.enum(['buena', 'regular', 'mala']).default('buena'),
-  estado_uso: z.enum(['operativo', 'en_reparacion', 'de_baja', 'obsoleto', 'resguardo_temporal']).default('operativo'),
+  estado_uso: z.enum(['bueno', 'regular', 'malo']).default('bueno'),
   descripcion: z.string().optional(),
   comentarios: z.string().optional(),
   
@@ -40,6 +40,9 @@ const baseFields = {
   
   // Estado del workflow
   estatus_validacion: z.enum(['borrador', 'revision', 'validado', 'rechazado']).optional().default('borrador'),
+  
+  // Tipo de inventario (Crucial para lógica condicional)
+  tipo_inventario: z.string().optional().nullable(),
   
   // TAB ADMINISTRATIVA - Datos Fiscales
   costo: z.preprocess(
@@ -61,6 +64,30 @@ const baseFields = {
     (val) => (val === '' || val === null || val === undefined || isNaN(Number(val))) ? 5 : Number(val),
     z.number().int().positive().nullable().optional()
   ),
+  
+  // INTERNO Master Fields
+  registro_patrimonial: z.string().optional().nullable(),
+  registro_interno: z.string().optional().nullable(),
+  elaboro_nombre: z.string().optional().nullable(),
+  fecha_elaboracion: z.string().optional().nullable(),
+  ures_asignacion: z.string().optional().nullable(),
+  recurso: z.string().optional().nullable(),
+  ur: z.string().optional().nullable(),
+  ubicacion_id: z.union([z.number().int().positive(), z.null()]).optional(),
+  responsable_entrega_id: z.union([z.number().int().positive(), z.null()]).optional(),
+  numero_empleado: z.string().optional().nullable(),
+  
+  // EXTERNO Master Fields
+  id_patrimonio: z.string().optional().nullable(),
+  clave_patrimonial: z.string().optional().nullable(),
+  numero_inventario: z.string().optional().nullable(),
+  ures_gasto: z.string().optional().nullable(),
+  ejercicio: z.string().optional().nullable(),
+  solicitud_compra: z.string().optional().nullable(),
+  idcon: z.string().optional().nullable(),
+  usu_asig: z.string().optional().nullable(),
+  fecha_registro: z.string().optional().nullable(),
+  fecha_asignacion: z.string().optional().nullable(),
 };
 
 // Esquema para Admin enviando a coordinación (datos físicos NO requeridos)
@@ -88,18 +115,22 @@ const inventorySchemaBase = z.object({
   modelo: z.string().optional(),
   tipo_bien: z.string().optional(),
   ubicacion: z.string().optional(),
-}).refine((data) => {
-  // Si NO hay coordinacion_id, entonces es creación física por coordinador
-  // y necesita todos los datos físicos
-  if (!data.coordinacion_id) {
-    return !!(data.marca && data.modelo && data.tipo_bien && data.ubicacion);
+  // No validamos condicionalmente aquí con refine estricto porque los campos varían mucho
+  // entre INTERNO y EXTERNO. Dejamos que los campos individuales con .min(1) hagan su trabajo
+  // si son requeridos en el JSX.
+}).superRefine((data, ctx) => {
+  // Validación condicional para INTERNO
+  if (data.tipo_inventario === 'INTERNO' && !data.coordinacion_id) {
+    if (!data.marca) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Marca requerida para Interno", path: ['marca'] });
+    if (!data.modelo) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Modelo requerido para Interno", path: ['modelo'] });
+    // tipo_bien y ubicacion tal vez no existen en Interno si se quitaron?
+    // Revisar JSX de Interno.
   }
-  // Si hay coordinacion_id, es creación fiscal por admin
-  // y NO necesita datos físicos todavía
-  return true;
-}, {
-  message: 'Si no asignas coordinación, debes completar marca, modelo, tipo de bien y ubicación',
-  path: ['marca']
+  
+  // Validación para EXTERNO
+  if (data.tipo_inventario === 'EXTERNO') {
+    // Si hay campos obligatorios específicos de EXTERNO
+  }
 });
 
 // Esquema para validación cuando se marca como "validado" (sin usar .extend())
@@ -125,8 +156,10 @@ const InventoryForm = ({
   userRole = 'coordinador', // 'admin', 'coordinador', 'usuario'
   userCoordinacionId = null // ID de coordinación del usuario logueado
 }) => {
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeInventoryTab, setActiveInventoryTab] = useState(initialData?.tipo_inventario || 'INTERNO');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   
   // Determinar si se debe usar validación estricta
   const isAdmin = userRole === 'admin';
@@ -157,6 +190,7 @@ const InventoryForm = ({
     clearErrors
   } = useForm({
     mode: 'onSubmit',
+    resolver: zodResolver(inventorySchemaBase),
     defaultValues: {
       marca: initialData?.marca || '',
       modelo: initialData?.modelo || '',
@@ -164,8 +198,23 @@ const InventoryForm = ({
       numero_patrimonio: initialData?.numero_patrimonio || '',
       tipo_bien: initialData?.tipo_bien || '',
       ubicacion: initialData?.ubicacion || '',
+      // Default a INTERNO si no existe, para activar validaciones
+      tipo_inventario: initialData?.tipo_inventario || 'INTERNO',
+      registro_patrimonial: initialData?.registro_patrimonial || '',
+      registro_interno: initialData?.registro_interno || '',
       estado: initialData?.estado || 'buena',
-      estado_uso: initialData?.estado_uso || 'operativo',
+      estado_uso: (() => {
+        // Migración de valores antiguos a nuevos
+        const oldValue = initialData?.estado_uso;
+        const migration = {
+          'operativo': 'bueno',
+          'en_reparacion': 'regular',
+          'resguardo_temporal': 'regular',
+          'obsoleto': 'malo',
+          'de_baja': 'malo'
+        };
+        return migration[oldValue] || oldValue || 'bueno';
+      })(),
       descripcion: initialData?.descripcion || '',
       comentarios: initialData?.comentarios || '',
       dependencia_id: initialData?.dependencia_id || 1,
@@ -187,6 +236,27 @@ const InventoryForm = ({
       proveedor: initialData?.proveedor || '',
       garantia_meses: initialData?.garantia_meses || null,
       vida_util_anios: initialData?.vida_util_anios || 5,
+      // Nuevos campos INTERNO Master
+      elaboro_nombre: initialData?.elaboro_nombre || '',
+      fecha_elaboracion: initialData?.fecha_elaboracion || '',
+      ures_asignacion: initialData?.ures_asignacion || '',
+      recurso: initialData?.recurso || '',
+      ur: initialData?.ur || '',
+      ubicacion_id: initialData?.ubicacion_id || null, // ID para tabla normalizada
+      responsable_entrega_id: initialData?.responsable_entrega_id || null, // ID para jerarquia
+      // Nuevos campos EXTERNO Master
+      id_patrimonio: initialData?.id_patrimonio || '',
+      clave_patrimonial: initialData?.clave_patrimonial || '',
+      numero_inventario: initialData?.numero_inventario || '',
+      ures_gasto: initialData?.ures_gasto || '',
+      ejercicio: initialData?.ejercicio || '',
+      solicitud_compra: initialData?.solicitud_compra || '',
+      idcon: initialData?.idcon || '',
+      usu_asig: initialData?.usu_asig || '',
+      fecha_registro: initialData?.fecha_registro || '',
+      fecha_asignacion: initialData?.fecha_asignacion || '',
+      numero_empleado: initialData?.numero_empleado || '', // Si es manual
+      tipo_inventario: initialData?.tipo_inventario || 'INTERNO', // Default INTERNO
     }
   });
 
@@ -203,9 +273,9 @@ const InventoryForm = ({
   
   // Si hay coordinación, los datos físicos NO son requeridos (Admin → Coordinador)
   // Si NO hay coordinación, los datos físicos SÍ son requeridos (Coordinador creando)
-  const datosGeneralesRequeridos = !hasCoordinacion;
+  // const datosGeneralesRequeridos = !hasCoordinacion; // Deprecated
   
-  const estatusValidacion = watch('estatus_validacion');
+  // const estatusValidacion = watch('estatus_validacion'); // Deprecated
   
   // Debug: Mostrar errores de validación
   useEffect(() => {
@@ -247,17 +317,84 @@ const InventoryForm = ({
         uuid_factura: data.uuid || null,
         numero_factura: data.factura || null,
         fecha_compra: data.fecha_adquisicion || null,
-        // Campos numéricos opcionales
+        fecha_adquisicion: data.fecha_adquisicion || null,
+      // Campos numéricos opcionales
         costo: (data.costo && !isNaN(Number(data.costo))) ? Number(data.costo) : null,
         garantia_meses: (data.garantia_meses && !isNaN(Number(data.garantia_meses))) ? Number(data.garantia_meses) : null,
         vida_util_anios: (data.vida_util_anios && !isNaN(Number(data.vida_util_anios))) ? Number(data.vida_util_anios) : 5,
+        // Nuevos campos de patrimonio
+        tipo_inventario: data.tipo_inventario || null,
+        registro_patrimonial: data.registro_patrimonial || null,
+        registro_interno: data.registro_interno || null,
+        jerarquia_responsable: data.jerarquia_responsable || null, // Posiblemente obsoleto si usamos responsable_entrega_id
+        ubicacion_especifica: data.ubicacion_especifica || null, // Obsoleto si usamos ubicacion_id? Prompt pide detalle A-2 etc.
+        id_patrimonio: data.id_patrimonio || null,
+        clave_patrimonial: data.clave_patrimonial || null,
+        numero_inventario: data.numero_inventario || null,
+        descripcion_bien: data.descripcion_bien || null,
+        
+        // Master INTERNO Fields
+        elaboro_nombre: data.elaboro_nombre || null,
+        fecha_elaboracion: data.fecha_elaboracion || null,
+        ures_asignacion: data.ures_asignacion || null,
+        recurso: data.recurso || null,
+        ur: data.ur || null,
+        ubicacion_id: data.ubicacion_id ? Number(data.ubicacion_id) : null,
+        responsable_entrega_id: data.responsable_entrega_id ? Number(data.responsable_entrega_id) : null,
+        
+        // Master EXTERNO Fields
+        ures_gasto: data.ures_gasto || null,
+        ejercicio: data.ejercicio || null,
+        solicitud_compra: data.solicitud_compra || null,
+        idcon: data.idcon || null,
+        usu_asig: data.usu_asig || null,
+        fecha_registro: data.fecha_registro || null,
+        fecha_asignacion: data.fecha_asignacion || null,
+        // COG, Fondo, Cta x Pagar (ya estaban en baseFields pero aseguramos)
+        cog: data.cog || null,
+        fondo: data.fondo || null,
+        cuenta_por_pagar: data.cuenta_por_pagar || null,
+        numero_empleado: data.numero_empleado || null,
       };
-      
+
       console.log('Datos limpiados:', cleanedData);
       console.log('🎯 coordinacion_id a enviar:', cleanedData.coordinacion_id, typeof cleanedData.coordinacion_id);
       
-      // Enviar datos - el backend se encargará de la validación
-      await onSubmit(cleanedData);
+      // Si hay imágenes, usar FormData
+      if (imageFiles.length > 0) {
+        const formData = new FormData();
+
+        // Si estamos actualizando y ya existen imágenes en initialData, envíalas para que el backend las concatene
+        if (initialData?.imagenes && Array.isArray(initialData.imagenes) && initialData.imagenes.length > 0) {
+          cleanedData.imagenes = initialData.imagenes;
+        }
+
+        // Agregar todos los campos como JSON string
+        formData.append('data', JSON.stringify(cleanedData));
+
+        // Agregar imágenes
+        imageFiles.forEach((file, index) => {
+          formData.append('imagenes', file);
+        });
+
+        console.log('📤 Enviando con imágenes (FormData)');
+        console.log('imageFiles at submit:', imageFiles);
+        // Debug: listar contenido de FormData (keys y tipos)
+        for (const entry of formData.entries()) {
+          console.log('FormData entry:', entry[0], entry[1]);
+        }
+        await onSubmit(formData);
+      } else {
+        // Sin imágenes, enviar JSON normal
+        // Asegurarnos de no enviar objetos File como 'imagenes' en JSON
+        if (cleanedData.imagenes && Array.isArray(cleanedData.imagenes)) {
+          // Mantener sólo URLs/strings
+          cleanedData.imagenes = cleanedData.imagenes.filter(i => typeof i === 'string');
+        }
+
+        console.log('📤 Enviando sin imágenes (JSON)');
+        await onSubmit(cleanedData);
+      }
       
     } catch (error) {
       console.error('❌ Error completo:', error);
@@ -267,472 +404,530 @@ const InventoryForm = ({
       setIsSubmitting(false);
     }
   };
-  
-  // Tabs disponibles (filtrados por rol)
-  const tabs = [
-    { id: 'general', label: 'Datos Generales', icon: <FaBox />, visible: true },
-    { id: 'asignacion', label: 'Asignación', icon: <FaUser />, visible: true },
-    { id: 'administrativa', label: 'Información Administrativa', icon: <FaFileInvoiceDollar />, visible: isAdmin }
-  ].filter(tab => tab.visible);
-  
+
   return (
     <div className="inventory-form-container">
-      <div className="form-header">
-        <h2>{isEditMode ? 'Editar Activo' : 'Nuevo Activo de Inventario'}</h2>
-        {initialData?.folio && (
-          <span className="folio-badge">Folio: {initialData.folio}</span>
-        )}
-      </div>
-      
-      {/* TABS */}
-      <div className="tabs-container">
-        {tabs.map(tab => (
+      {/* Header con Tabs */}
+      <div className="form-header-with-tabs">
+        <div className="form-header-top">
+          <div className="form-title-section">
+            <h2>{isEditMode ? 'Editar Activo' : 'Nuevo Activo de Inventario'}</h2>
+            {initialData?.folio && (
+              <span className="folio-badge">Folio: {initialData.folio}</span>
+            )}
+          </div>
+        </div>
+        
+        {/* Tabs de navegación */}
+        <div className="inventory-tabs">
           <button
-            key={tab.id}
             type="button"
-            className={`tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
+            className={`inventory-tab ${activeInventoryTab === 'INTERNO' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveInventoryTab('INTERNO');
+              setValue('tipo_inventario', 'INTERNO');
+            }}
           >
-            {tab.icon}
-            <span>{tab.label}</span>
+            <span className="tab-title">INTERNO</span>
           </button>
-        ))}
+          <button
+            type="button"
+            className={`inventory-tab ${activeInventoryTab === 'EXTERNO' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveInventoryTab('EXTERNO');
+              setValue('tipo_inventario', 'EXTERNO');
+            }}
+          >
+            <span className="tab-title">EXTERNO</span>
+          </button>
+        </div>
       </div>
-      
+
       <form onSubmit={handleSubmit(onSubmitHandler)} className="inventory-form">
         
-        {/* TAB 1: DATOS GENERALES */}
-        {activeTab === 'general' && (
-          <div className="tab-content">
+        <div className="form-content">
+            <div>
             {hasCoordinacion && (
-              <div style={{
-                background: '#e3f2fd',
-                border: '1px solid #2196f3',
-                borderRadius: '6px',
-                padding: '12px 16px',
-                marginBottom: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}>
-                <span style={{ fontSize: '20px' }}>ℹ️</span>
-                <div>
+              <div className="info-banner">
+                <span className="info-icon">ℹ️</span>
+                <div className="info-content">
                   <strong>Modo: Envío a Coordinación</strong>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#555' }}>
+                  <p>
                     Completa <strong>tipo de bien, marca y modelo</strong> para que el coordinador identifique el equipo.
                     Los datos de serie/ubicación los llenará el coordinador al recibirlo.
                   </p>
                 </div>
               </div>
             )}
-            <h3>Identificación del Activo</h3>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  Tipo de Bien
-                  {hasCoordinacion && (
-                    <span style={{
-                      padding: '3px 10px',
-                      background: '#3498db',
-                      color: 'white',
-                      fontSize: '10px',
-                      borderRadius: '12px',
-                      fontWeight: '600',
-                      textTransform: 'uppercase'
-                    }}>Requerido</span>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  {...register('tipo_bien')}
-                  className="form-control"
-                  placeholder="Ej: Computadora, Impresora, Mobiliario"
-                />
-                {errors.tipo_bien && <span className="error">{errors.tipo_bien.message}</span>}
-              </div>
-              
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  Marca
-                  {hasCoordinacion && (
-                    <span style={{
-                      padding: '3px 10px',
-                      background: '#3498db',
-                      color: 'white',
-                      fontSize: '10px',
-                      borderRadius: '12px',
-                      fontWeight: '600',
-                      textTransform: 'uppercase'
-                    }}>Requerido</span>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  {...register('marca')}
-                  className="form-control"
-                  placeholder="Ej: HP, Dell, Lenovo"
-                />
-                {errors.marca && <span className="error">{errors.marca.message}</span>}
-              </div>
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  Modelo
-                  {hasCoordinacion && (
-                    <span style={{
-                      padding: '3px 10px',
-                      background: '#3498db',
-                      color: 'white',
-                      fontSize: '10px',
-                      borderRadius: '12px',
-                      fontWeight: '600',
-                      textTransform: 'uppercase'
-                    }}>Requerido</span>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  {...register('modelo')}
-                  className="form-control"
-                  placeholder="Ej: Optiplex 7090, LaserJet Pro"
-                />
-                {errors.modelo && <span className="error">{errors.modelo.message}</span>}
-              </div>
-              
-              <div className="form-group">
-                <label>Número de Serie</label>
-                <input
-                  type="text"
-                  {...register('numero_serie')}
-                  className="form-control"
-                  placeholder="Serie del fabricante"
-                />
-              </div>
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>Número de Patrimonio</label>
-                <input
-                  type="text"
-                  {...register('numero_patrimonio')}
-                  className="form-control"
-                  placeholder="Número de activo fijo"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>
-                  Ubicación 
-                  {datosGeneralesRequeridos && <span className="required">*</span>}
-                </label>
-                <input
-                  type="text"
-                  {...register('ubicacion')}
-                  className="form-control"
-                  placeholder="Ej: Edificio A, Oficina 201"
-                />
-                {errors.ubicacion && <span className="error">{errors.ubicacion.message}</span>}
-              </div>
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>Estado Físico</label>
-                <select {...register('estado')} className="form-control">
-                  <option value="buena">Buena</option>
-                  <option value="regular">Regular</option>
-                  <option value="mala">Mala</option>
-                </select>
-              </div>
-              
-              <div className="form-group">
-                <label>Estado de Uso</label>
-                <select {...register('estado_uso')} className="form-control">
-                  <option value="operativo">Operativo</option>
-                  <option value="en_reparacion">En Reparación</option>
-                  <option value="resguardo_temporal">Resguardo Temporal</option>
-                  <option value="obsoleto">Obsoleto</option>
-                  <option value="de_baja">De Baja</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="form-group">
-              <label>Descripción Técnica</label>
-              <textarea
-                {...register('descripcion')}
-                className="form-control"
-                rows="3"
-                placeholder="Especificaciones técnicas, características relevantes..."
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Comentarios / Observaciones</label>
-              <textarea
-                {...register('comentarios')}
-                className="form-control"
-                rows="2"
-                placeholder="Notas adicionales, historial, etc."
-              />
-            </div>
-            
-            <h3>Tipo de Inventario</h3>
-            <div className="checkbox-group">
-              <label className="checkbox-label">
-                <input type="checkbox" {...register('es_oficial_siia')} />
-                <span>Inventario Oficial SIIA</span>
-              </label>
-              <label className="checkbox-label">
-                <input type="checkbox" {...register('es_local')} />
-                <span>Inventario Local</span>
-              </label>
-              <label className="checkbox-label">
-                <input type="checkbox" {...register('es_investigacion')} />
-                <span>Inventario de Investigación</span>
-              </label>
-            </div>
-          </div>
-        )}
-        
-        {/* TAB 2: ASIGNACIÓN */}
-        {activeTab === 'asignacion' && (
-          <div className="tab-content">
-            <h3>Asignación y Responsables</h3>
-            
-            <div className="form-group">
-              <label>Coordinación</label>
-              <Controller
-                name="coordinacion_id"
-                control={control}
-                render={({ field }) => {
-                  console.log('Coordinación field value:', field.value);
-                  return (
-                    <>
-                      <CoordinacionSelect 
-                        value={field.value}
-                        onChange={(val) => {
-                          console.log('Coordinación onChange:', val);
-                          field.onChange(val);
-                        }}
-                        disabled={!isAdmin} // Solo admin puede cambiar coordinación
-                        userCoordinacionId={userCoordinacionId}
-                      />
-                      {/* Hidden input para asegurar que el valor se envíe aunque esté disabled */}
-                      {!isAdmin && field.value && (
-                        <input type="hidden" value={field.value} />
-                      )}
-                    </>
-                  );
-                }}
-              />
-              {errors.coordinacion_id && <span className="error">{errors.coordinacion_id.message}</span>}
-            </div>
-            <div className="form-group">
-              <label>Empleado Resguardante</label>
-              <Controller
-                name="empleado_resguardante_id"
-                control={control}
-                render={({ field }) => {
-                  console.log('Empleado Resguardante field value:', field.value);
-                  return (
-                    <EmpleadoSelect 
-                      value={field.value}
-                      onChange={(val) => {
-                        console.log('Empleado Resguardante onChange:', val);
-                        field.onChange(val);
+
+            {/* =================================================================================
+                INTERNO MASTER LIST
+               ================================================================================= */}
+            {activeInventoryTab === 'INTERNO' && (
+              <div className="section-container">
+                                
+                {/* 2. Fotografía del bien (3) */}
+                <div className="form-group mb-6">
+                  <label className="input-label">2. Fotografía del bien (Máx. 3) *</label>
+                  <div className="file-upload-wrapper">
+                    <input
+                      type="file"
+                      id="file-upload-interno"
+                      accept="image/*"
+                      multiple
+                      className="hidden-input"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files).slice(0, 3);
+                        setImageFiles(files);
+                        const previews = files.map(file => URL.createObjectURL(file));
+                        setImagePreviews(previews);
                       }}
                     />
-                  );
-                }}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Usuario Asignado (Sistema)</label>
-              <Controller
-                name="usuario_asignado_id"
-                control={control}
-                render={({ field }) => {
-                  console.log('Usuario Asignado field value:', field.value);
-                  return (
-                    <UsuarioSelect 
-                      value={field.value}
-                      onChange={(val) => {
-                        console.log('Usuario Asignado onChange:', val);
-                        field.onChange(val);
+                    <label htmlFor="file-upload-interno" className="custom-file-upload">
+                      <FaCloudUploadAlt className="upload-icon" />
+                      Elegir archivos
+                    </label>
+                    <span className="file-name-display">
+                      {imageFiles.length > 0 
+                        ? `${imageFiles.length} archivo(s) seleccionado(s)` 
+                        : 'Sin archivos seleccionados'}
+                    </span>
+                  </div>
+                  
+                  {/* Previsualización de imágenes */}
+                  {imagePreviews.length > 0 && (
+                    <div className="image-previews-row">
+                      {imagePreviews.map((src, index) => (
+                        <div key={index} className="preview-thumb-container">
+                          <img src={src} alt={`Preview ${index}`} className="preview-thumb" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {imageFiles.length === 0 && (
+                    <div className="no-image-placeholder">
+                      <FaImage /> <span>Vista previa</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-row">
+                  {/* 3. Numero de registro patrimonial */}
+                  <div className="form-group">
+                    <label>3. No. Registro Patrimonial</label>
+                    <input type="text" {...register('registro_patrimonial')} className="form-control" />
+                  </div>
+                  {/* 4. No. De registro interno */}
+                  <div className="form-group">
+                    <label>4. No. Registro Interno</label>
+                    <input type="text" {...register('registro_interno')} className="form-control" />
+                  </div>
+                </div>
+
+                {/* 5. Descripción */}
+                <div className="form-group">
+                  <label>5. Descripción</label>
+                  <textarea {...register('descripcion')} className="form-control" rows="2" />
+                </div>
+
+
+                {/* 6. Elaboro y Fecha Elaboración */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>6. Elaboró</label>
+                    <input type="text" {...register('elaboro_nombre')} className="form-control" placeholder="Nombre de quien elabora" />
+                  </div>
+                  <div className="form-group">
+                    <label>18. Fecha Elaboración</label>
+                    <input type="date" {...register('fecha_elaboracion')} className="form-control" />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  {/* 7. Marca */}
+                  <div className="form-group">
+                    <label>7. Marca</label>
+                    <input type="text" {...register('marca')} className="form-control" />
+                  </div>
+                  {/* 8. Modelo */}
+                  <div className="form-group">
+                    <label>8. Modelo</label>
+                    <input type="text" {...register('modelo')} className="form-control" />
+                  </div>
+                  {/* 9. No. De serie */}
+                  <div className="form-group">
+                    <label>9. No. Serie</label>
+                    <input type="text" {...register('numero_serie')} className="form-control" />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  {/* 10. No. Factura */}
+                  <div className="form-group">
+                    <label>10. No. Factura</label>
+                    <input type="text" {...register('factura')} className="form-control" />
+                  </div>
+                  {/* 11. Fecha de Factura */}
+                  <div className="form-group">
+                    <label>11. Fecha Factura</label>
+                    <input type="date" {...register('fecha_adquisicion')} className="form-control" />
+                  </div>
+                </div>
+
+                {/* 12. UUID */}
+                <div className="form-group">
+                  <label>12. UUID (Folio Fiscal)</label>
+                  <input type="text" {...register('uuid')} className="form-control" />
+                </div>
+
+                <div className="form-row">
+                  {/* 13. Costo */}
+                  <div className="form-group">
+                    <label>13. Costo</label>
+                    <input type="number" step="0.01" {...register('costo')} className="form-control" />
+                  </div>
+                  {/* 14. URES de Asignación */}
+                  <div className="form-group">
+                    <label>14. URES Asignación</label>
+                    <input type="text" {...register('ures_asignacion')} className="form-control" />
+                  </div>
+                </div>
+
+                {/* 15. Ubicación (Catalogo Normalizado) */}
+                <div className="form-group">
+                  <label>15. Ubicación (Edificio/Salón)</label>
+                  <Controller
+                    name="ubicacion_id"
+                    control={control}
+                    render={({ field }) => <UbicacionSelect {...field} />}
+                  />
+                </div>
+
+                <div className="form-row">
+                  {/* 16. Recurso */}
+                  <div className="form-group">
+                    <label>16. Recurso</label>
+                    <input type="text" {...register('recurso')} className="form-control" />
+                  </div>
+                  {/* 17. Proveedor */}
+                  <div className="form-group">
+                    <label>17. Proveedor</label>
+                    <input type="text" {...register('proveedor')} className="form-control" />
+                  </div>
+                </div>
+
+
+                {/* 19. Observaciones */}
+                <div className="form-group">
+                  <label>19. Observaciones</label>
+                  <textarea {...register('comentarios')} className="form-control" rows="2" />
+                </div>
+
+                {/* 20. Estado de Uso */}
+                <div className="form-group">
+                  <label>20. Estado de Uso</label>
+                  <select {...register('estado_uso')} className="form-control">
+                    <option value="bueno">Bueno</option>
+                    <option value="regular">Regular</option>
+                    <option value="malo">Malo</option>
+                  </select>
+                </div>
+
+                {/* 21. ENTREGA Responsable (Jerarquía) */}
+                <div className="form-group">
+                  <label>21. ENTREGA Responsable (Jerarquía)</label>
+                  <Controller
+                    name="responsable_entrega_id"
+                    control={control}
+                    render={({ field }) => <JerarquiaSelect {...field} />}
+                  />
+                </div>
+
+                {/* 22. Resguardante y 23. Numero de Empleado */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>22. Resguardante (Usuario)</label>
+                    <Controller
+                      name="usuario_asignado_id"
+                      control={control}
+                      render={({ field }) => <EmpleadoSelect {...field} />}
+                    />
+                  </div>
+                  <div className="form-group">
+                     <label>23. No. Empleado</label>
+                     <input type="text" {...register('numero_empleado')} className="form-control" placeholder="Autocompletar si es posible" />
+                  </div>
+                </div>
+
+                {/* 24. UR */}
+                <div className="form-group">
+                  <label>24. UR</label>
+                  <input type="text" {...register('ur')} className="form-control" />
+                </div>
+              </div>
+            )}
+
+
+            {/* =================================================================================
+                EXTERNO MASTER LIST
+               ================================================================================= */}
+            {activeInventoryTab === 'EXTERNO' && (
+              <div className="section-container">
+                  {/* Título eliminado: 🏛️ Inventario EXTERNO (Lista Maestra) */}
+
+                 {/* 2. Id Patrimonio */}
+                 <div className="form-group">
+                   <label>2. ID Patrimonio</label>
+                   <input type="text" {...register('id_patrimonio')} className="form-control" />
+                 </div>
+
+                 <div className="form-row">
+                    {/* 3. Folio (usamos numero_patrimonio o inventario?) prompt dice Folio */}
+                    <div className="form-group">
+                       <label>3. Folio</label>
+                       <input type="text" {...register('folio')} className="form-control" disabled placeholder="Automático" />
+                    </div>
+                    {/* 4. Clave Patrimonial */}
+                    <div className="form-group">
+                       <label>4. Clave Patrimonial</label>
+                       <input type="text" {...register('clave_patrimonial')} className="form-control" />
+                    </div>
+                 </div>
+
+                 {/* 5. Descripción */}
+                 <div className="form-group">
+                    <label>5. Descripción</label>
+                    <textarea {...register('descripcion')} className="form-control" rows="2" />
+                 </div>
+
+                 {/* 6. Comentarios */}
+                 <div className="form-group">
+                    <label>6. Comentarios</label>
+                    <textarea {...register('comentarios')} className="form-control" rows="2" />
+                 </div>
+
+                 {/* 7. ENTREGA Responsable (Jerarquía) */}
+                 <div className="form-group">
+                    <label>7. ENTREGA Responsable (Jerarquía)</label>
+                    <Controller
+                      name="responsable_entrega_id"
+                      control={control}
+                      render={({ field }) => <JerarquiaSelect {...field} />}
+                    />
+                 </div>
+
+                 <div className="form-row">
+                    {/* 8. U. Res. de Gasto */}
+                    <div className="form-group">
+                       <label>8. U. Res. de Gasto</label>
+                       <input type="text" {...register('ures_gasto')} className="form-control" />
+                    </div>
+                    {/* 9. U. Res. De Asignación */}
+                    <div className="form-group">
+                       <label>9. U. Res. de Asignación</label>
+                       <input type="text" {...register('ures_asignacion')} className="form-control" />
+                    </div>
+                 </div>
+
+                 <div className="form-row">
+                    {/* 10. Costo */}
+                    <div className="form-group">
+                       <label>10. Costo</label>
+                       <input type="number" step="0.01" {...register('costo')} className="form-control" />
+                    </div>
+                    {/* 11. COG */}
+                    <div className="form-group">
+                       <label>11. COG</label>
+                       <input type="text" {...register('cog')} className="form-control" />
+                    </div>
+                 </div>
+
+                 {/* 12. Tipo de bien */}
+                 <div className="form-group">
+                    <label>12. Tipo de Bien</label>
+                    <input type="text" {...register('tipo_bien')} className="form-control" />
+                 </div>
+
+                 <div className="form-row">
+                    {/* 13. Num Fact */}
+                    <div className="form-group">
+                       <label>13. Num Factura</label>
+                       <input type="text" {...register('factura')} className="form-control" />
+                    </div>
+                    {/* 14. Fec Factura */}
+                    <div className="form-group">
+                       <label>14. Fec Factura</label>
+                       <input type="date" {...register('fecha_adquisicion')} className="form-control" />
+                    </div>
+                 </div>
+
+                 <div className="form-row">
+                    {/* 15. UUID */}
+                    <div className="form-group">
+                       <label>15. UUID</label>
+                       <input type="text" {...register('uuid')} className="form-control" />
+                    </div>
+                    {/* 16. Fondo */}
+                    <div className="form-group">
+                       <label>16. Fondo</label>
+                       <input type="text" {...register('fondo')} className="form-control" />
+                    </div>
+                 </div>
+
+                 <div className="form-row">
+                    {/* 17, 18 y 19 Eliminados para evitar conflicto con INTERNO */}
+                    {/* Marca, Modelo y Serie se capturan en el bloque condicional si aplica, 
+                        pero para EXTERNO Master parecen estar duplicados visualmente.
+                        Si se requieren para externo, deben compartir el MISMO input visual 
+                        o manejar lógica de renderizado condicional estricta (no solo display:none).
+                        
+                        Dado que el diseño visual de INTERNO ya tiene estos campos, 
+                        y EXTERNO parece tener su propia estructura, 
+                        asumiremos que estos campos NO deben duplicarse aquí si ya existen arriba.
+                        
+                        PERO: El bloque de arriba es para INTERNO. Este es para EXTERNO.
+                        Si el usuario selecciona EXTERNO, el bloque de arriba se oculta (display:none).
+                        Este bloque se muestra.
+                        
+                        EL PROBLEMA: react-hook-form registra AMBOS porque ambos están en el DOM.
+                        SOLUCIÓN: Usar renderizado condicional ({activeInventoryTab === 'EXTERNO' && ...})
+                        en lugar de display:none para asegurar que solo exista UN input en el DOM a la vez.
+                    */}
+                 </div>
+
+                 {/* 20. Ejercicio */}
+                 <div className="form-group">
+                    <label>20. Ejercicio</label>
+                    <input type="text" {...register('ejercicio')} className="form-control" />
+                 </div>
+
+                 <div className="form-row">
+                    {/* 21. Solicitud/ord. Compra */}
+                    <div className="form-group">
+                       <label>21. Solicitud/Ord. Compra</label>
+                       <input type="text" {...register('solicitud_compra')} className="form-control" />
+                    </div>
+                    {/* 22. Cuenta por pagar */}
+                    <div className="form-group">
+                       <label>22. Cuenta por Pagar</label>
+                       <input type="text" {...register('cuenta_por_pagar')} className="form-control" />
+                    </div>
+                 </div>
+
+                 <div className="form-row">
+                    {/* 23. IDCON */}
+                    <div className="form-group">
+                       <label>23. IDCON</label>
+                       <input type="text" {...register('idcon')} className="form-control" />
+                    </div>
+                    {/* 24. Proveedor */}
+                    <div className="form-group">
+                       <label>24. Proveedor</label>
+                       <input type="text" {...register('proveedor')} className="form-control" />
+                    </div>
+                 </div>
+
+                 {/* 25. Usu Asig */}
+                 <div className="form-group">
+                    <label>25. Usu Asig</label>
+                    <input type="text" {...register('usu_asig')} className="form-control" />
+                 </div>
+
+                 <div className="form-row">
+                    {/* 26. Fecha registro */}
+                    <div className="form-group">
+                       <label>26. Fecha Registro</label>
+                       <input type="date" {...register('fecha_registro')} className="form-control" />
+                    </div>
+                    {/* 27. Fecha Asig */}
+                    <div className="form-group">
+                       <label>27. Fecha Asig</label>
+                       <input type="date" {...register('fecha_asignacion')} className="form-control" />
+                    </div>
+                 </div>
+
+                 {/* 28. Ubicación */}
+                 <div className="form-group">
+                    <label>28. Ubicación</label>
+                    <Controller
+                       name="ubicacion_id"
+                       control={control}
+                       render={({ field }) => <UbicacionSelect {...field} />}
+                    />
+                 </div>
+                 
+                 {/* 29. Estado de Uso */}
+                 <div className="form-group">
+                    <label>29. Estado de Uso</label>
+                    <select {...register('estado_uso')} className="form-control">
+                       <option value="operativo">Bueno</option>
+                       <option value="regular">Regular</option>
+                       <option value="malo">Malo</option>
+                    </select>
+                 </div>
+
+                 {/* 30. Resguardante y 31. Num Empleado */}
+                 <div className="form-row">
+                    <div className="form-group">
+                       <label>30. Resguardante (Usuario)</label>
+                       <Controller
+                          name="empleado_resguardante_id"
+                          control={control}
+                          render={({ field }) => <EmpleadoSelect {...field} />}
+                       />
+                    </div>
+                    <div className="form-group">
+                       <label>31. No. Empleado</label>
+                       <input type="text" {...register('numero_empleado')} className="form-control" />
+                    </div>
+                 </div>
+                 
+                 {/* Fotos Externo (No estaba en lista explicita pero asumimos que tambien lleva) */}
+                 <div className="form-group mb-6">
+                   <label className="input-label">Fotografías Adicionales (Opcional)</label>
+                   <div className="file-upload-wrapper">
+                    <input
+                      type="file"
+                      id="file-upload-externo"
+                      accept="image/*"
+                      multiple
+                      className="hidden-input"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files).slice(0, 3);
+                        setImageFiles(files);
+                        const previews = files.map(file => URL.createObjectURL(file));
+                        setImagePreviews(previews);
                       }}
                     />
-                  );
-                }}
-              />
+                    <label htmlFor="file-upload-externo" className="custom-file-upload">
+                      <FaCloudUploadAlt className="upload-icon" />
+                      Elegir archivos
+                    </label>
+                    <span className="file-name-display">
+                      {imageFiles.length > 0 
+                        ? `${imageFiles.length} archivo(s) seleccionado(s)` 
+                        : 'Sin archivos seleccionados'}
+                    </span>
+                   </div>
+                   
+                   {imagePreviews.length > 0 && (
+                    <div className="image-previews-row">
+                      {imagePreviews.map((src, index) => (
+                        <div key={index} className="preview-thumb-container">
+                          <img src={src} alt={`Preview ${index}`} className="preview-thumb" />
+                        </div>
+                      ))}
+                    </div>
+                   )}
+                 </div>
+               </div>
+           )}
+
             </div>
-            
-            <div className="form-group">
-              <label>Número de Resguardo Interno</label>
-              <input
-                type="text"
-                {...register('numero_resguardo_interno')}
-                className="form-control"
-                placeholder="Número de control interno"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Estado de Validación</label>
-              <select {...register('estatus_validacion')} className="form-control">
-                <option value="borrador">Borrador</option>
-                <option value="revision">En Revisión</option>
-                {isAdmin && <option value="validado">Validado</option>}
-                {isAdmin && <option value="rechazado">Rechazado</option>}
-              </select>
-              <small className="help-text">
-                {estatusValidacion === 'validado' && '⚠️ Al marcar como validado, los datos fiscales serán obligatorios'}
-              </small>
-            </div>
-          </div>
-        )}
-        
-        {/* TAB 3: ADMINISTRATIVA (Solo Admin) */}
-        {activeTab === 'administrativa' && isAdmin && (
-          <div className="tab-content">
-            <div className="admin-warning">
-              <FaFileInvoiceDollar />
-              <p>Esta información es confidencial y solo visible para administradores.</p>
-            </div>
-            
-            <h3>Datos Fiscales</h3>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>
-                  Costo de Adquisición 
-                  {estatusValidacion === 'validado' && <span className="required">*</span>}
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  {...register('costo', { valueAsNumber: true })}
-                  className="form-control"
-                  placeholder="0.00"
-                />
-                {errors.costo && <span className="error">{errors.costo.message}</span>}
-              </div>
-              
-              <div className="form-group">
-                <label>COG (Clave Presupuestal)</label>
-                <input
-                  type="text"
-                  {...register('cog')}
-                  className="form-control"
-                  placeholder="Ej: 5151"
-                />
-              </div>
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>
-                  UUID (Factura Electrónica)
-                  {estatusValidacion === 'validado' && <span className="required">*</span>}
-                </label>
-                <input
-                  type="text"
-                  {...register('uuid')}
-                  className="form-control"
-                  placeholder="UUID del CFDI"
-                />
-                {errors.uuid && <span className="error">{errors.uuid.message}</span>}
-              </div>
-              
-              <div className="form-group">
-                <label>
-                  Número de Factura
-                  {estatusValidacion === 'validado' && <span className="required">*</span>}
-                </label>
-                <input
-                  type="text"
-                  {...register('factura')}
-                  className="form-control"
-                  placeholder="Folio fiscal"
-                />
-                {errors.factura && <span className="error">{errors.factura.message}</span>}
-              </div>
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>Fondo</label>
-                <input
-                  type="text"
-                  {...register('fondo')}
-                  className="form-control"
-                  placeholder="Ej: FONE, PRODEP"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Cuenta por Pagar</label>
-                <input
-                  type="text"
-                  {...register('cuenta_por_pagar')}
-                  className="form-control"
-                  placeholder="Número de cuenta"
-                />
-              </div>
-            </div>
-            
-            <h3>Información Complementaria</h3>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>Fecha de Adquisición</label>
-                <input
-                  type="date"
-                  {...register('fecha_adquisicion')}
-                  className="form-control"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Proveedor</label>
-                <input
-                  type="text"
-                  {...register('proveedor')}
-                  className="form-control"
-                  placeholder="Nombre del proveedor"
-                />
-              </div>
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>Garantía (Meses)</label>
-                <input
-                  type="number"
-                  {...register('garantia_meses', { valueAsNumber: true })}
-                  className="form-control"
-                  placeholder="12"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Vida Útil (Años)</label>
-                <input
-                  type="number"
-                  {...register('vida_util_anios', { valueAsNumber: true })}
-                  className="form-control"
-                  placeholder="5"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-        
+        </div>
+
+        {/* Tabs de Asignación y Administrativa eliminados por estar incluidos en la Lista Maestra */}
+
         {/* BOTONES DE ACCIÓN */}
         <div className="form-actions">
           <button 
@@ -839,7 +1034,6 @@ const UsuarioSelect = ({ value, onChange }) => {
     // Usar api con autenticación
     api.get('/api/users')
       .then(response => {
-        console.log('Usuarios cargados:', response.data);
         setUsuarios(response.data.data || []);
       })
       .catch(err => console.error('Error cargando usuarios:', err));
@@ -859,6 +1053,85 @@ const UsuarioSelect = ({ value, onChange }) => {
         <option key={user.id} value={user.id}>
           {user.nombre} {user.apellido_paterno} {user.apellido_materno || ''} - {user.email}
         </option>
+      ))}
+    </select>
+  );
+};
+
+const JerarquiaSelect = ({ value, onChange, disabled }) => {
+  const [jerarquias, setJerarquias] = useState([]);
+  
+  useEffect(() => {
+    api.get('/api/catalogs/jerarquias')
+      .then(response => {
+        // Usamos la lista plana para el select, pero con indentación visual
+        const flatList = response.data.flat || [];
+        setJerarquias(flatList);
+      })
+      .catch(err => console.error('Error cargando jerarquías:', err));
+  }, []);
+  
+  return (
+    <select 
+      value={value || ''} 
+      onChange={(e) => {
+        const val = e.target.value;
+        onChange(val ? parseInt(val, 10) : null);
+      }}
+      disabled={disabled}
+      className="form-control"
+      style={{ fontFamily: 'monospace' }} // Para que la indentación se vea bien
+    >
+      <option value="">Seleccione Responsable de Entrega...</option>
+      {jerarquias.map(item => (
+        <option key={item.id} value={item.id}>
+         {/* Indentación visual basada en nivel */}
+         {'\u00A0\u00A0'.repeat((item.nivel || 1) - 1)} 
+         {item.codigo ? `${item.codigo} - ` : ''} {item.nombre}
+        </option>
+      ))}
+    </select>
+  );
+};
+
+const UbicacionSelect = ({ value, onChange, disabled }) => {
+  const [ubicaciones, setUbicaciones] = useState([]);
+  
+  useEffect(() => {
+    api.get('/api/catalogs/ubicaciones')
+      .then(response => {
+        setUbicaciones(response.data.flat || []);
+      })
+      .catch(err => console.error('Error cargando ubicaciones:', err));
+  }, []);
+  
+  // Agrupar por edificio para mostrar optgroups
+  const grouped = ubicaciones.reduce((acc, curr) => {
+    const edificio = curr.edificio_nombre || 'Sin Edificio';
+    if (!acc[edificio]) acc[edificio] = [];
+    acc[edificio].push(curr);
+    return acc;
+  }, {});
+  
+  return (
+    <select 
+      value={value || ''} 
+      onChange={(e) => {
+        const val = e.target.value;
+        onChange(val ? parseInt(val, 10) : null);
+      }}
+      disabled={disabled}
+      className="form-control"
+    >
+      <option value="">Seleccione Ubicación...</option>
+      {Object.entries(grouped).map(([edificio, locs]) => (
+        <optgroup key={edificio} label={edificio}>
+          {locs.map(loc => (
+            <option key={loc.id} value={loc.id}>
+              {loc.nombre} {loc.piso ? `(${loc.piso})` : ''}
+            </option>
+          ))}
+        </optgroup>
       ))}
     </select>
   );

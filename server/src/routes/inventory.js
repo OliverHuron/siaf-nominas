@@ -33,7 +33,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({
+const uploadExcel = multer({
   storage: storage,
   limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit
   fileFilter: (req, file, cb) => {
@@ -45,6 +45,20 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error('Solo se permiten archivos Excel (.xlsx, .xls)'));
+    }
+  }
+});
+
+// Configure memory storage for images (processed by sharp in controller)
+const uploadImages = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten imágenes (JPEG, PNG, WEBP)'));
     }
   }
 });
@@ -62,7 +76,7 @@ const handleMulterError = (err, req, res, next) => {
 // Todas las rutas requieren autenticación
 router.use(authenticateToken);
 router.get('/template', inventoryController.downloadTemplate);
-router.post('/import', upload.single('file'), handleMulterError, inventoryController.importInventoryFromExcel);
+router.post('/import', uploadExcel.single('file'), handleMulterError, inventoryController.importInventoryFromExcel);
 
 // =====================================================
 // RUTAS DE WORKFLOW
@@ -142,11 +156,11 @@ router.get('/stats', inventoryController.getInventoryStats);
 // GET /api/inventory/:id - Obtener un activo específico
 router.get('/:id', inventoryController.getInventoryById);
 
-// POST /api/inventory - Crear nuevo activo
-router.post('/', inventoryController.createInventoryItem);
+// POST /api/inventory - Crear nuevo activo (Soporta multipart/form-data para imágenes)
+router.post('/', uploadImages.array('imagenes', 3), handleMulterError, inventoryController.createInventoryItem);
 
-// PUT /api/inventory/:id - Actualizar activo existente
-router.put('/:id', inventoryController.updateInventoryItem);
+// PUT /api/inventory/:id - Actualizar activo existente (Soporta multipart/form-data)
+router.put('/:id', uploadImages.array('imagenes', 3), handleMulterError, inventoryController.updateInventoryItem);
 
 // DELETE /api/inventory/:id - Dar de baja activo (solo admin)
 router.delete('/:id', inventoryController.deleteInventoryItem);

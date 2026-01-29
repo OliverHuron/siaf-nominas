@@ -10,9 +10,7 @@ import Layout from './components/Layout';
 // Pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import InventoryView from './pages/Inventory/InventoryView'; // Nuevo sistema multi-inventario
-import PorRecibir from './pages/Inventory/PorRecibir'; // Workflow: Por Recibir
-import PendienteFiscal from './pages/Inventory/PendienteFiscal'; // Workflow: Pendiente Fiscal
+import InventoryView from './pages/Inventory/InventoryView'; // Unified Inventory + Patrimonio system
 import Employees from './pages/Employees';
 import AttendanceQuincenal from './pages/AttendanceQuincenal';
 import Emails from './pages/Emails';
@@ -47,8 +45,6 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="dashboard-realtime" element={<RealtimeDashboard />} />
               <Route path="inventory" element={<InventoryView />} />
-              <Route path="inventory/por-recibir" element={<PorRecibir />} />
-              <Route path="inventory/pendiente-fiscal" element={<PendienteFiscal />} />
               <Route path="employees" element={<Employees />} />
               <Route path="attendance" element={<AttendanceQuincenal />} />
               <Route path="emails" element={<Emails />} />

@@ -4,11 +4,12 @@
 // Propósito: Vista detallada de un activo con animación slide-in
 // =====================================================
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   FaTimes, FaBox, FaBuilding, FaMapMarkerAlt, FaUser, 
   FaFileInvoiceDollar, FaCalendar, FaCheckCircle, FaExclamationCircle,
-  FaEdit, FaTrash, FaClock, FaBarcode, FaTag
+  FaEdit, FaTrash, FaClock, FaBarcode, FaTag, FaImage
 } from 'react-icons/fa';
 import './InventoryDrawer.css';
 
@@ -37,13 +38,11 @@ const InventoryDrawer = ({
   
   const getEstadoUsoBadge = (estadoUso) => {
     const badges = {
-      operativo: { color: '#10b981', bg: '#d1fae5', icon: <FaCheckCircle />, label: 'Operativo' },
-      en_reparacion: { color: '#f59e0b', bg: '#fef3c7', icon: <FaExclamationCircle />, label: 'En Reparación' },
-      resguardo_temporal: { color: '#6366f1', bg: '#e0e7ff', icon: <FaClock />, label: 'Resguardo Temporal' },
-      obsoleto: { color: '#9ca3af', bg: '#f3f4f6', icon: <FaExclamationCircle />, label: 'Obsoleto' },
-      de_baja: { color: '#ef4444', bg: '#fee2e2', icon: <FaTimes />, label: 'De Baja' }
+      bueno: { color: '#10b981', bg: '#d1fae5', icon: <FaCheckCircle />, label: 'Bueno' },
+      regular: { color: '#f59e0b', bg: '#fef3c7', icon: <FaExclamationCircle />, label: 'Regular' },
+      malo: { color: '#ef4444', bg: '#fee2e2', icon: <FaTimes />, label: 'Malo' }
     };
-    return badges[estadoUso] || badges.operativo;
+    return badges[estadoUso] || badges.bueno;
   };
   
   const getValidacionBadge = (estatus) => {
@@ -105,10 +104,9 @@ const InventoryDrawer = ({
         {/* Content */}
         <div className="drawer-content">
           
-          {/* Folio y Badges */}
+          {/* Folio */}
           <div className="drawer-section">
             <div className="folio-display">
-              <FaBarcode />
               <div>
                 <span className="folio-label">Folio</span>
                 <span className="folio-value">{item.folio || 'Pendiente'}</span>
@@ -118,21 +116,9 @@ const InventoryDrawer = ({
             <div className="badges-row">
               <span 
                 className="status-badge" 
-                style={{ backgroundColor: estadoBadge.bg, color: estadoBadge.color }}
-              >
-                Estado: {estadoBadge.label}
-              </span>
-              <span 
-                className="status-badge" 
                 style={{ backgroundColor: estadoUsoBadge.bg, color: estadoUsoBadge.color }}
               >
                 {estadoUsoBadge.icon} {estadoUsoBadge.label}
-              </span>
-              <span 
-                className="status-badge" 
-                style={{ backgroundColor: validacionBadge.bg, color: validacionBadge.color }}
-              >
-                {validacionBadge.label}
               </span>
             </div>
           </div>
@@ -143,12 +129,33 @@ const InventoryDrawer = ({
               <FaBox /> Datos Generales
             </h3>
             <div className="detail-grid">
+              <DetailItem label="Tipo de Inventario" value={item.tipo_inventario} highlight />
               <DetailItem label="Marca" value={item.marca} />
               <DetailItem label="Modelo" value={item.modelo} />
               <DetailItem label="Tipo de Bien" value={item.tipo_bien} />
               <DetailItem label="Número de Serie" value={item.numero_serie} />
               <DetailItem label="Número de Patrimonio" value={item.numero_patrimonio} />
-              <DetailItem label="Ubicación" value={item.ubicacion} icon={<FaMapMarkerAlt />} />
+              
+              {/* Campos específicos INTERNO */}
+              {item.tipo_inventario === 'INTERNO' && (
+                <>
+                  <DetailItem label="Registro Patrimonial" value={item.registro_patrimonial} />
+                  <DetailItem label="Registro Interno" value={item.registro_interno} />
+                  <DetailItem label="Ubicación Específica" value={item.ubicacion_especifica} />
+                </>
+              )}
+
+              {/* Campos específicos EXTERNO */}
+              {item.tipo_inventario === 'EXTERNO' && (
+                <>
+                  <DetailItem label="ID Patrimonio" value={item.id_patrimonio} />
+                  <DetailItem label="Clave Patrimonial" value={item.clave_patrimonial} />
+                  <DetailItem label="Número de Inventario" value={item.numero_inventario} />
+                  <DetailItem label="Número de Empleado" value={item.numero_empleado} />
+                </>
+              )}
+              
+              <DetailItem label="Ubicación" value={item.ubicacion_nombre} icon={<FaMapMarkerAlt />} />
             </div>
             
             {item.descripcion && (
@@ -164,27 +171,19 @@ const InventoryDrawer = ({
                 <p className="detail-text">{item.comentarios}</p>
               </div>
             )}
+            
+            {/* Galería de Imágenes */}
+            {item.imagenes && item.imagenes.length > 0 && (() => {
+              const imgs = (typeof item.imagenes === 'string' ? JSON.parse(item.imagenes) : item.imagenes);
+              return (
+                <ImageGallerySection images={imgs} />
+              );
+            })()}
           </div>
+
           
-          {/* Tipo de Inventario */}
-          <div className="drawer-section">
-            <h3 className="section-title">
-              <FaTag /> Clasificación
-            </h3>
-            <div className="inventory-types">
-              {item.es_oficial_siia && (
-                <span className="type-badge official">Inventario Oficial SIIA</span>
-              )}
-              {item.es_local && (
-                <span className="type-badge local">Inventario Local</span>
-              )}
-              {item.es_investigacion && (
-                <span className="type-badge research">Inventario de Investigación</span>
-              )}
-            </div>
-          </div>
-          
-          {/* Asignación */}
+
+          {/* Asignación y Responsables */}
           <div className="drawer-section">
             <h3 className="section-title">
               <FaUser /> Asignación y Responsables
@@ -209,10 +208,41 @@ const InventoryDrawer = ({
               />
             </div>
           </div>
+
+          {/* Datos Administrativos / Elaboración */}
+          <div className="drawer-section">
+             <h3 className="section-title">
+               <FaFileInvoiceDollar /> Detalles Administrativos
+             </h3>
+             <div className="detail-grid">
+               <DetailItem label="Elaboró" value={item.elaboro_nombre} />
+               <DetailItem label="Fecha Elaboración" value={formatDate(item.fecha_elaboracion)} icon={<FaCalendar />} />
+               <DetailItem label="URES de Asignación" value={item.ures_asignacion} />
+               <DetailItem label="Recurso" value={item.recurso} />
+               <DetailItem label="UR" value={item.ur} />
+               <DetailItem label="Número de Empleado" value={item.numero_empleado} />
+               <DetailItem label="ENTREGA Responsable" value={item.responsable_entrega_nombre || item.jerarquia_responsable} />
+               
+               {item.tipo_inventario === 'EXTERNO' && (
+                 <>
+                   <DetailItem label="COG" value={item.cog} />
+                   <DetailItem label="Fondo" value={item.fondo} />
+                   <DetailItem label="Cuenta por Pagar" value={item.cuenta_por_pagar} />
+                   <DetailItem label="U. Res. Gasto" value={item.ures_gasto} />
+                   <DetailItem label="Ejercicio" value={item.ejercicio} />
+                   <DetailItem label="Solicitud Compra" value={item.solicitud_compra} />
+                   <DetailItem label="IDCON" value={item.idcon} />
+                   <DetailItem label="Usu. Asig" value={item.usu_asig} />
+                   <DetailItem label="Fecha Registro" value={formatDate(item.fecha_registro)} icon={<FaCalendar />} />
+                   <DetailItem label="Fecha Asignación" value={formatDate(item.fecha_asignacion)} icon={<FaCalendar />} />
+                 </>
+               )}
+             </div>
+          </div>
           
           {/* Información Administrativa (Solo Admin) */}
           {isAdmin && (
-            <div className="drawer-section admin-section">
+            <div className="drawer-section">
               <h3 className="section-title">
                 <FaFileInvoiceDollar /> Información Administrativa
               </h3>
@@ -237,8 +267,6 @@ const InventoryDrawer = ({
                   value={formatDate(item.fecha_adquisicion)} 
                   icon={<FaCalendar />} 
                 />
-                <DetailItem label="Garantía (Meses)" value={item.garantia_meses} />
-                <DetailItem label="Vida Útil (Años)" value={item.vida_util_anios} />
               </div>
             </div>
           )}
@@ -300,6 +328,64 @@ const DetailItem = ({ label, value, icon, highlight }) => (
     <span className="detail-value">{value || 'N/A'}</span>
   </div>
 );
+
+// =====================================================
+// Image gallery + lightbox modal component
+// =====================================================
+const ImageGallerySection = ({ images = [] }) => {
+  const [openIndex, setOpenIndex] = useState(null);
+  const open = (i) => setOpenIndex(i);
+  const close = () => setOpenIndex(null);
+  const prev = () => setOpenIndex((i) => (i === 0 ? images.length - 1 : i - 1));
+  const next = () => setOpenIndex((i) => (i === images.length - 1 ? 0 : i + 1));
+
+  // Debug helper
+  console.log('InventoryDrawer: images for gallery', images);
+
+  // Keyboard navigation for lightbox (Esc to close, arrows to navigate)
+  useEffect(() => {
+    if (openIndex === null) return;
+    const handler = (e) => {
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowLeft') prev();
+      if (e.key === 'ArrowRight') next();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [openIndex, images.length]);
+
+  // Lightbox portal content
+  const Lightbox = () => (
+    <div className="lightbox-overlay" onClick={close} role="dialog" aria-modal="true">
+      <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+        <button className="lightbox-close" onClick={close} aria-label="Cerrar">✕</button>
+        <button className="lightbox-prev" onClick={prev} aria-label="Anterior">‹</button>
+        <img className="lightbox-img" src={images[openIndex]} alt={`Evidencia ${openIndex + 1}`} />
+        <button className="lightbox-next" onClick={next} aria-label="Siguiente">›</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="detail-full">
+      <span className="detail-label"><FaImage /> Fotografías</span>
+
+      {images.length === 0 ? (
+        <div className="no-images-placeholder">No hay fotografías</div>
+      ) : (
+        <div className="image-gallery">
+          {images.map((img, idx) => (
+            <div key={idx} className="gallery-item" onClick={() => open(idx)} role="button" tabIndex={0}>
+              <img src={img} alt={`Evidencia ${idx + 1}`} onError={(e) => { e.currentTarget.src = '/images/image-missing.png'; }} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {openIndex !== null && createPortal(<Lightbox />, document.body)}
+    </div>
+  );
+};
 
 export default InventoryDrawer;
 

@@ -147,9 +147,9 @@ const InventoryView = () => {
       if (filters.estado_uso) params.append('estado_uso', filters.estado_uso);
       if (filters.estatus_validacion) params.append('estatus_validacion', filters.estatus_validacion);
 
-      if (filters.tipo_inventario === 'oficial_siia') params.append('es_oficial_siia', 'true');
-      if (filters.tipo_inventario === 'local') params.append('es_local', 'true');
-      if (filters.tipo_inventario === 'investigacion') params.append('es_investigacion', 'true');
+      if (filters.tipo_inventario && filters.tipo_inventario !== 'todos') {
+        params.append('tipo_inventario', filters.tipo_inventario);
+      }
 
       const response = await api.get(`/api/inventory?${params.toString()}`);
 
@@ -200,8 +200,19 @@ const InventoryView = () => {
     setIsDrawerOpen(false); // Cerrar drawer si está abierto
   };
 
-  const handleView = (item) => {
-    setDrawerItem(item);
+  const handleView = async (item) => {
+    try {
+      // Fetch the latest data for the item to ensure images and related fields are up to date
+      const res = await api.get(`/api/inventory/${item.id}`);
+      if (res.data && res.data.success) {
+        setDrawerItem(res.data.data);
+      } else {
+        setDrawerItem(item);
+      }
+    } catch (err) {
+      console.error('Error fetching item for drawer:', err);
+      setDrawerItem(item);
+    }
     setIsDrawerOpen(true);
   };
 
@@ -227,19 +238,41 @@ const InventoryView = () => {
     try {
       let response;
 
+      // Support FormData uploads: if data is FormData, override headers so multipart boundary is set correctly
+      const requestConfig = {};
+      if (typeof FormData !== 'undefined' && data instanceof FormData) {
+        // Ensure axios sends multipart/form-data (with boundary) instead of application/json
+        requestConfig.headers = { 'Content-Type': 'multipart/form-data' };
+      }
+
       if (editingItem) {
         // Actualizar
-        response = await api.put(`/api/inventory/${editingItem.id}`, data);
+        response = await api.put(`/api/inventory/${editingItem.id}`, data, requestConfig);
       } else {
         // Crear
-        response = await api.post('/api/inventory', data);
+        response = await api.post('/api/inventory', data, requestConfig);
       }
 
       if (response.data.success) {
+        console.log('API save response:', response.data);
         alert(editingItem ? 'Activo actualizado' : 'Activo creado exitosamente');
         setShowForm(false);
         setEditingItem(null);
-        loadInventory();
+        
+        // Recargar la lista
+        await loadInventory();
+        
+        // Si el drawer está abierto, refrescar el item
+        if (isDrawerOpen && drawerItem && editingItem) {
+          try {
+            const updatedItem = await api.get(`/api/inventory/${editingItem.id}`);
+            if (updatedItem.data.success) {
+              setDrawerItem(updatedItem.data.data);
+            }
+          } catch (err) {
+            console.error('Error refreshing drawer item:', err);
+          }
+        }
       }
 
     } catch (err) {
@@ -389,9 +422,13 @@ const InventoryView = () => {
 
   const getEstadoBadge = (estado) => {
     const styles = {
+      // Estado físico (campo 19)
       buena: { bg: '#d1fae5', color: '#065f46', label: 'Buena' },
       regular: { bg: '#fef3c7', color: '#92400e', label: 'Regular' },
-      mala: { bg: '#fee2e2', color: '#991b1b', label: 'Mala' }
+      mala: { bg: '#fee2e2', color: '#991b1b', label: 'Mala' },
+      // Estado de uso (campo 20)
+      bueno: { bg: '#d1fae5', color: '#065f46', label: 'Bueno' },
+      malo: { bg: '#fee2e2', color: '#991b1b', label: 'Malo' }
     };
     const style = styles[estado] || styles.buena;
     return (
@@ -522,11 +559,9 @@ const InventoryView = () => {
                 onChange={(e) => setFilters({ ...filters, estado_uso: e.target.value })}
               >
                 <option value="">Todos</option>
-                <option value="operativo">Operativo</option>
-                <option value="en_reparacion">En Reparación</option>
-                <option value="resguardo_temporal">Resguardo Temporal</option>
-                <option value="obsoleto">Obsoleto</option>
-                <option value="de_baja">De Baja</option>
+                <option value="bueno">Bueno</option>
+                <option value="regular">Regular</option>
+                <option value="malo">Malo</option>
               </select>
             </div>
 
@@ -554,37 +589,27 @@ const InventoryView = () => {
                 checked={filters.tipo_inventario === 'todos'}
                 onChange={(e) => setFilters({ ...filters, tipo_inventario: e.target.value })}
               />
-              <span>Todos los Inventarios</span>
+              <span>Todos</span>
             </label>
             <label>
               <input
                 type="radio"
                 name="tipo_inventario"
-                value="oficial_siia"
-                checked={filters.tipo_inventario === 'oficial_siia'}
+                value="INTERNO"
+                checked={filters.tipo_inventario === 'INTERNO'}
                 onChange={(e) => setFilters({ ...filters, tipo_inventario: e.target.value })}
               />
-              <span>Solo Inventario Oficial SIIA</span>
+              <span className="badge badge-interno">INTERNO</span>
             </label>
             <label>
               <input
                 type="radio"
                 name="tipo_inventario"
-                value="local"
-                checked={filters.tipo_inventario === 'local'}
+                value="EXTERNO"
+                checked={filters.tipo_inventario === 'EXTERNO'}
                 onChange={(e) => setFilters({ ...filters, tipo_inventario: e.target.value })}
               />
-              <span>Solo Inventario Local</span>
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="tipo_inventario"
-                value="investigacion"
-                checked={filters.tipo_inventario === 'investigacion'}
-                onChange={(e) => setFilters({ ...filters, tipo_inventario: e.target.value })}
-              />
-              <span>Solo Inventario de Investigación</span>
+              <span className="badge badge-externo">EXTERNO</span>
             </label>
           </div>
 
@@ -618,17 +643,15 @@ const InventoryView = () => {
               <th>Folio</th>
               <th>Tipo</th>
               <th>Marca / Modelo</th>
-              <th>Coordinación</th>
               <th>Ubicación</th>
               <th>Estado</th>
-              <th>Validación</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {items.length === 0 ? (
               <tr>
-                <td colSpan="8" className="empty-state">
+                <td colSpan="6" className="empty-state">
                   <FaExclamationCircle />
                   <p>No se encontraron activos</p>
                 </td>
@@ -643,17 +666,29 @@ const InventoryView = () => {
                   <td>
                     <span className="folio-cell">{item.folio || 'Pendiente'}</span>
                   </td>
-                  <td>{item.tipo_bien}</td>
+                  <td>
+                    <span 
+                      style={{ 
+                        fontSize: '11px', 
+                        padding: '3px 8px', 
+                        borderRadius: '4px', 
+                        backgroundColor: item.tipo_inventario === 'INTERNO' ? '#e3f2fd' : '#fff3e0',
+                        color: item.tipo_inventario === 'INTERNO' ? '#1976d2' : '#f57c00',
+                        border: `1px solid ${item.tipo_inventario === 'INTERNO' ? '#90caf9' : '#ffcc80'}`,
+                        fontWeight: '600'
+                      }}
+                    >
+                      {item.tipo_inventario}
+                    </span>
+                  </td>
                   <td>
                     <div className="marca-modelo-cell">
                       <strong>{item.marca}</strong>
                       <small>{item.modelo}</small>
                     </div>
                   </td>
-                  <td>{item.coordinacion_nombre || 'Sin asignar'}</td>
-                  <td>{item.ubicacion}</td>
-                  <td>{getEstadoBadge(item.estado)}</td>
-                  <td>{getValidacionBadge(item.estatus_validacion)}</td>
+                  <td>{item.ubicacion_nombre || 'Sin asignar'}</td>
+                  <td>{getEstadoBadge(item.estado_uso)}</td>
                   <td onClick={(e) => e.stopPropagation()}>
                     <div className="action-buttons">
                       <span

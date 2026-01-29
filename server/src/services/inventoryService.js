@@ -43,9 +43,15 @@ class InventoryService {
       let query = `
         SELECT 
           i.*,
-          c.nombre AS coordinacion_nombre
+          c.nombre AS coordinacion_nombre,
+          j.nombre AS responsable_entrega_nombre,
+          u.nombre AS ubicacion_nombre,
+          ua.nombre AS usuario_asignado_nombre
         FROM public.inventario i
         LEFT JOIN public.coordinaciones c ON i.coordinacion_id = c.id
+        LEFT JOIN public.jerarquias_responsables j ON i.responsable_entrega_id = j.id
+        LEFT JOIN public.ubicaciones u ON i.ubicacion_id = u.id
+        LEFT JOIN public.usuarios ua ON i.usuario_asignado_id = ua.id
         WHERE 1=1
       `;
 
@@ -119,6 +125,12 @@ class InventoryService {
         paramCount++;
       }
 
+      if (otherFilters.tipo_inventario) {
+        query += ` AND i.tipo_inventario = $${paramCount}`;
+        params.push(otherFilters.tipo_inventario);
+        paramCount++;
+      }
+
       // ---------------------------------------------------------
       // PASO 4: QUERY DE CONTEO (Total con filtros, sin paginación)
       // ---------------------------------------------------------
@@ -178,6 +190,12 @@ class InventoryService {
       if (otherFilters.es_investigacion !== undefined) {
         countQuery += ` AND i.es_investigacion = $${countParamCount}`;
         countParams.push(otherFilters.es_investigacion);
+        countParamCount++;
+      }
+
+      if (otherFilters.tipo_inventario) {
+        countQuery += ` AND i.tipo_inventario = $${countParamCount}`;
+        countParams.push(otherFilters.tipo_inventario);
         countParamCount++;
       }
 
@@ -288,11 +306,20 @@ class InventoryService {
           costo, cog, uuid, factura, fondo, cuenta_por_pagar,
           empleado_resguardante_id, usuario_asignado_id, numero_resguardo_interno,
           estatus_validacion, es_oficial_siia, es_local, es_investigacion,
-          fecha_adquisicion, vida_util_anios, garantia_meses, proveedor
+          fecha_adquisicion, vida_util_anios, garantia_meses, proveedor,
+          tipo_inventario, imagenes, registro_patrimonial, registro_interno,
+          ubicacion_id, ubicacion_especifica, responsable_entrega_id,
+          elaboro_nombre, fecha_elaboracion, ures_asignacion, recurso, ur,
+          id_patrimonio, clave_patrimonial, numero_inventario,
+          ures_gasto, ejercicio, solicitud_compra, idcon, usu_asig,
+          fecha_registro, fecha_asignacion, numero_empleado
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
           $11, $12, $13, $14, $15, $16, $17, $18, $19,
-          $20, $21, $22, $23, $24, $25, $26, $27, $28, $29
+          $20, $21, $22, $23, $24, $25, $26, $27, $28, $29,
+          $30, $31, $32, $33, $34, $35, $36, $37, $38, $39,
+          $40, $41, $42, $43, $44, $45, $46, $47, $48, $49,
+          $50, $51, $52
         )
         RETURNING *
       `;
@@ -326,7 +353,31 @@ class InventoryService {
         (data.fecha_adquisicion && data.fecha_adquisicion !== '' && data.fecha_adquisicion !== 'null') ? data.fecha_adquisicion : null,
         data.vida_util_anios || 5,
         data.garantia_meses || null,
-        data.proveedor || null
+        data.proveedor || null,
+        data.tipo_inventario || null,
+        data.imagenes ? JSON.stringify(data.imagenes) : '[]',
+        data.registro_patrimonial || null,
+        data.registro_interno || null,
+        data.ubicacion_id || null,
+        data.ubicacion_especifica || null,
+        data.responsable_entrega_id || null,
+        data.elaboro_nombre || null,
+        data.fecha_elaboracion || null,
+        data.ures_asignacion || null,
+        data.recurso || null,
+        data.ur || null,
+        data.id_patrimonio || null,
+        data.clave_patrimonial || null,
+        data.numero_inventario || null,
+        // Eliminado descripcion_bien (data.descripcion ya se usa en $9)
+        data.ures_gasto || null,
+        data.ejercicio || null,
+        data.solicitud_compra || null,
+        data.idcon || null,
+        data.usu_asig || null,
+        data.fecha_registro || null,
+        data.fecha_asignacion || null,
+        data.numero_empleado || null
       ];
 
       const result = await client.query(query, values);
@@ -380,7 +431,14 @@ class InventoryService {
         'empleado_resguardante_id', 'usuario_asignado_id', 'numero_resguardo_interno',
         'estatus_validacion', 'es_oficial_siia', 'es_local', 'es_investigacion',
         'fecha_adquisicion', 'vida_util_anios', 'garantia_meses', 'proveedor', 'observaciones_tecnicas',
-        'coordinacion_id'
+        'coordinacion_id',
+        // Nuevos campos Master
+        'tipo_inventario', 'imagenes', 'registro_patrimonial', 'registro_interno',
+        'ubicacion_id', 'ubicacion_especifica', 'responsable_entrega_id', 
+        'elaboro_nombre', 'fecha_elaboracion', 'ures_asignacion', 'recurso', 'ur',
+        'id_patrimonio', 'clave_patrimonial', 'numero_inventario', // descripcion_bien removed
+        'ures_gasto', 'ejercicio', 'solicitud_compra', 'idcon', 'usu_asig',
+        'fecha_registro', 'fecha_asignacion', 'numero_empleado'
       ];
 
       for (const field of allowedFields) {
@@ -392,13 +450,21 @@ class InventoryService {
             value = null;
           }
 
+
           // Para fechas, validar formato o convertir a NULL
-          if (field === 'fecha_adquisicion' && value !== null) {
+          const dateFields = ['fecha_adquisicion', 'fecha_elaboracion', 'fecha_registro', 'fecha_asignacion'];
+          if (dateFields.includes(field) && value !== null) {
             // Si no es una fecha válida, convertir a NULL
             const dateValue = new Date(value);
             if (isNaN(dateValue.getTime())) {
               value = null;
             }
+          }
+
+
+          // Para campos JSON, asegurar que sean string si es objeto/array
+          if (field === 'imagenes' && value !== null && typeof value === 'object') {
+            value = JSON.stringify(value);
           }
 
           fields.push(`${field} = $${paramCount}`);
@@ -407,12 +473,16 @@ class InventoryService {
         }
       }
 
+      // Si no hay campos para actualizar
       if (fields.length === 0) {
-        throw new Error('No hay campos para actualizar');
+        await client.query('ROLLBACK');
+        return { success: false, message: 'No se recibieron datos para actualizar' };
       }
 
+      // Añadir ID al final
       values.push(itemId);
 
+      // Ejecutar UPDATE
       const query = `
         UPDATE public.inventario 
         SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP
@@ -487,6 +557,51 @@ class InventoryService {
   /**
    * Obtener estadísticas del inventario (respeta RLS)
    */
+  async getInventoryStats(userId) {
+    const client = await this.pool.connect();
+
+  }
+
+  /**
+   * Obtener un activo por ID (respeta RLS)
+   */
+  async getInventoryById(userId, itemId) {
+    const client = await this.pool.connect();
+    try {
+      console.log(`getInventoryById called with userId=${userId}, itemId=${itemId}`);
+      await this.setUserContext(client, userId);
+
+      const query = `
+        SELECT i.*, c.nombre AS coordinacion_nombre
+        FROM public.inventario i
+        LEFT JOIN public.coordinaciones c ON i.coordinacion_id = c.id
+        WHERE i.id = $1
+        LIMIT 1
+      `;
+
+      const result = await client.query(query, [itemId]);
+      console.log('getInventoryById SQL returned rows:', result.rowCount);
+      if (result.rowCount === 0) return null;
+
+      // Parse imagenes if present
+      const item = result.rows[0];
+      try {
+        if (item.imagenes && typeof item.imagenes === 'string') {
+          item.imagenes = JSON.parse(item.imagenes);
+        }
+      } catch (e) {
+        console.warn('Warning: could not parse imagenes JSON for item', itemId, e.message);
+      }
+
+      return item;
+    } catch (error) {
+      console.error('Error en getInventoryById:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async getInventoryStats(userId) {
     const client = await this.pool.connect();
 

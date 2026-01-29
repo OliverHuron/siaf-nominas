@@ -80,6 +80,11 @@ app.use((req, res, next) => {
 app.use(express.json({ charset: 'utf-8', limit: '500mb' }));
 app.use(express.urlencoded({ extended: true, charset: 'utf-8', limit: '500mb' }));
 
+// Serve uploaded files (images, reports, etc.) under /uploads
+const path = require('path');
+const uploadsPath = path.join(__dirname, '..', 'uploads');
+app.use('/uploads', express.static(uploadsPath, { maxAge: '1d' }));
+
 // Routes
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
@@ -100,6 +105,7 @@ const spacesRoutes = require('./routes/spaces.routes');
 const nominaRoutes = require('./routes/nomina.routes');
 const loadTestRoutes = require('./routes/loadtest.routes');
 const importJobRoutes = require('./routes/importJob.routes');
+const catalogRoutes = require('./routes/catalog.routes');
 const realtimeUtil = require('./utils/realtime');
 
 app.use('/api/auth', authRoutes);
@@ -121,6 +127,7 @@ app.use('/api/email-templates', emailTemplateRoutes);
 app.use('/api/spaces', spacesRoutes);
 app.use('/api/nomina', nominaRoutes);
 app.use('/api/loadtest', loadTestRoutes);
+app.use('/api/catalogs', catalogRoutes);
 
 // SSE endpoint for spaces/audit realtime updates
 app.get('/api/realtime/spaces', (req, res) => {

@@ -40,9 +40,7 @@ const Layout = () => {
       expanded: inventarioOpen,
       toggle: () => setInventarioOpen(!inventarioOpen),
       children: [
-        { path: '/inventory', icon: <FaBoxes />, label: 'Ver Todo' },
-        { path: '/inventory/por-recibir', icon: <FaBoxes />, label: 'Por Recibir' },
-        { path: '/inventory/pendiente-fiscal', icon: <FaFileAlt />, label: 'Pendiente Fiscal', adminOnly: true }
+        { path: '/inventory', icon: <FaBoxes />, label: 'Ver Todo' }
       ]
     },
     {
