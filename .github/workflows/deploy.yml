@@ -14,7 +14,7 @@ jobs:
 
       - name: Instalar dependencias del Servidor
         run: |
-          cd server
+          cd /var/www/siaf-nominas/server
           npm install --production
 
       - name: Construir Frontend (Client)
@@ -38,7 +38,7 @@ jobs:
             cp /var/www/.env.siaf-nominas /var/www/siaf-nominas/server/.env
             echo "⚠️ .env restaurado desde backup"
           fi
-          
+
       - name: Ejecutar migraciones pendientes (nominas_db)
         run: |
           sudo -u postgres psql -c "CREATE TABLE IF NOT EXISTS migrations_log (filename TEXT PRIMARY KEY, executed_at TIMESTAMP DEFAULT NOW());" nominas_db
