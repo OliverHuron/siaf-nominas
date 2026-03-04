@@ -38,24 +38,7 @@ jobs:
             cp /var/www/.env.siaf-nominas /var/www/siaf-nominas/server/.env
             echo "⚠️ .env restaurado desde backup"
           fi
-
-      - name: Ejecutar migraciones pendientes
-        run: |
-          sudo -u postgres psql -c "CREATE TABLE IF NOT EXISTS migrations_log (filename TEXT PRIMARY KEY, executed_at TIMESTAMP DEFAULT NOW());" siaf_nominas_db
-
-          for file in /var/www/siaf-nominas/database/migrations/*.sql; do
-            filename=$(basename "$file")
-            already_run=$(sudo -u postgres psql -tAc "SELECT COUNT(*) FROM migrations_log WHERE filename='$filename'" siaf_nominas_db)
-
-            if [ "$already_run" -eq "0" ]; then
-              echo "▶ Ejecutando migración: $filename"
-              sudo -u postgres psql -d siaf_nominas_db -f "$file"
-              sudo -u postgres psql -c "INSERT INTO migrations_log (filename) VALUES ('$filename')" siaf_nominas_db
-              echo "✅ $filename ejecutada"
-            else
-              echo "⏭ $filename ya ejecutada, saltando"
-            fi
-          done
+          
       - name: Ejecutar migraciones pendientes (nominas_db)
         run: |
           sudo -u postgres psql -c "CREATE TABLE IF NOT EXISTS migrations_log (filename TEXT PRIMARY KEY, executed_at TIMESTAMP DEFAULT NOW());" nominas_db
