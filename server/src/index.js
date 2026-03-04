@@ -68,7 +68,13 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(compression());
+// Compresión excepto para SSE (necesita streaming)
+app.use(compression({
+  filter: (req, res) => {
+    if (req.path === '/api/events') return false;
+    return compression.filter(req, res);
+  }
+}));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // Configuración para UTF-8
@@ -88,51 +94,36 @@ app.use('/uploads', express.static(uploadsPath, { maxAge: '1d' }));
 // Routes
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
-const inventoryRoutes = require('./routes/inventory'); // Sistema de inventario con RLS y workflow
 const coordinacionesRoutes = require('./routes/coordinaciones');
 const employeeRoutes = require('./routes/employee.routes');
 const attendanceRoutes = require('./routes/attendanceQuincenal.routes');
-const requestRoutes = require('./routes/request.routes');
-const technicalFormRoutes = require('./routes/technicalForm.routes');
-const fichaTecnicaRoutes = require('./routes/fichaTecnica.routes');
-const dependencyRoutes = require('./routes/dependency.routes');
-const buildingRoutes = require('./routes/building.routes');
-const classroomRoutes = require('./routes/classroom.routes');
 const emailRoutes = require('./routes/email.routes');
 const gmailRoutes = require('./routes/gmail.routes');
 const emailTemplateRoutes = require('./routes/emailTemplate.routes');
-const spacesRoutes = require('./routes/spaces.routes');
 const nominaRoutes = require('./routes/nomina.routes');
 const loadTestRoutes = require('./routes/loadtest.routes');
 const importJobRoutes = require('./routes/importJob.routes');
 const catalogRoutes = require('./routes/catalog.routes');
+const monitorRoutes = require('./routes/monitor.routes');
+const { subscribe: sseSubscribe } = require('./config/sse');
 const realtimeUtil = require('./utils/realtime');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/inventory', inventoryRoutes);
 app.use('/api/coordinaciones', coordinacionesRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/attendance', attendanceRoutes);
-app.use('/api/requests', requestRoutes);
 app.use('/api/import-jobs', importJobRoutes);
-app.use('/api/technical-forms', technicalFormRoutes);
-app.use('/api/fichas-tecnicas', fichaTecnicaRoutes);
-app.use('/api/dependencies', dependencyRoutes);
-app.use('/api/buildings', buildingRoutes);
-app.use('/api/classrooms', classroomRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/gmail', gmailRoutes);
 app.use('/api/email-templates', emailTemplateRoutes);
-app.use('/api/spaces', spacesRoutes);
 app.use('/api/nomina', nominaRoutes);
 app.use('/api/loadtest', loadTestRoutes);
 app.use('/api/catalogs', catalogRoutes);
+app.use('/api/monitor', monitorRoutes);
 
-// SSE endpoint for spaces/audit realtime updates
-app.get('/api/realtime/spaces', (req, res) => {
-  realtimeUtil.addClient(res);
-});
+// SSE: Eventos en tiempo real
+app.get('/api/events', sseSubscribe);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -159,7 +150,7 @@ app.use('*', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
   console.log(`📝 Modo: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 Cliente URL: ${process.env.CLIENT_URL}`);
@@ -167,5 +158,9 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('🔒 Ejecutándose en modo PRODUCCIÓN');
   }
 });
+
+// Keep-alive mayor que nginx timeout para que SSE no se corte
+server.keepAliveTimeout = 95 * 1000;
+server.headersTimeout = 96 * 1000;
 
 module.exports = app;

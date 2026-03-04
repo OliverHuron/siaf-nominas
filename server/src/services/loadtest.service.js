@@ -29,11 +29,7 @@ class LoadTestService {
     const unidades = ['231', '231-1', '231-2', '231-3'];
     const subtipos = ['Administrativo de Base', 'Administrativo de Apoyo'];
 
-    // Obtener IDs reales de dependencias
-    const depResult = await db.query('SELECT id FROM dependencias LIMIT 10');
-    const dependenciaIds = depResult.rows.length > 0 
-      ? depResult.rows.map(r => r.id) 
-      : [null]; // Si no hay dependencias, usar null
+    const dependenciaIds = [null];
 
     for (let i = 0; i < count; i++) {
       const tipo = faker.helpers.arrayElement(tipos);
@@ -43,7 +39,7 @@ class LoadTestService {
         apellido_materno: faker.person.lastName(),
         email: `test.${faker.internet.email()}`,
         rfc: `TEST${faker.string.alphanumeric(9).toUpperCase()}`,
-        telefono: faker.string.numeric(10), // Exactamente 10 dígitos
+        telefono: faker.string.numeric(10),
         tipo: tipo,
         estatus: 'activo',
         activo: true,
@@ -51,7 +47,7 @@ class LoadTestService {
         genero: faker.helpers.arrayElement(['M', 'F']),
         unidad_responsable: faker.helpers.arrayElement(unidades),
         subtipo_administrativo: tipo === 'administrativo' ? faker.helpers.arrayElement(subtipos) : null,
-        dependencia_id: faker.helpers.arrayElement(dependenciaIds)
+        dependencia_id: null
       };
       employees.push(employee);
     }
@@ -62,41 +58,8 @@ class LoadTestService {
    * Genera datos de prueba para inventario
    */
   async generateInventoryData(count) {
-    const inventory = [];
-    const tipos = ['Equipo de Cómputo', 'Mobiliario', 'Equipo de Oficina', 'Vehículo'];
-    const estados = ['disponible', 'en_uso', 'mantenimiento'];
-    const stages = ['COMPLETO', 'FISCAL', 'FISICO', 'EN_TRANSITO'];
-
-    // Obtener IDs reales de dependencias y coordinaciones
-    const depResult = await db.query('SELECT id FROM dependencias LIMIT 10');
-    const coordResult = await db.query('SELECT id FROM coordinaciones LIMIT 20');
-    
-    const dependenciaIds = depResult.rows.length > 0 
-      ? depResult.rows.map(r => r.id) 
-      : [null];
-    const coordinacionIds = coordResult.rows.length > 0 
-      ? coordResult.rows.map(r => r.id) 
-      : [null];
-
-    for (let i = 0; i < count; i++) {
-      const item = {
-        folio: `TEST-${faker.string.alphanumeric(8).toUpperCase()}`,
-        descripcion: faker.commerce.productDescription(),
-        tipo: faker.helpers.arrayElement(tipos),
-        numero_serie: `SN-TEST-${faker.string.alphanumeric(10).toUpperCase()}`,
-        marca: faker.company.name(),
-        modelo: faker.vehicle.model(),
-        estado: faker.helpers.arrayElement(estados),
-        stage: faker.helpers.arrayElement(stages),
-        proveedor: faker.company.name(),
-        fecha_compra: faker.date.past({ years: 5 }),
-        costo: faker.number.float({ min: 1000, max: 50000, precision: 0.01 }),
-        dependencia_id: faker.helpers.arrayElement(dependenciaIds),
-        coordinacion_id: faker.helpers.arrayElement(coordinacionIds)
-      };
-      inventory.push(item);
-    }
-    return inventory;
+    // Inventory module has been removed. Returns empty array.
+    return [];
   }
 
   /**
@@ -115,7 +78,7 @@ class LoadTestService {
         for (let batch = 0; batch < totalBatches; batch++) {
           const currentBatchSize = Math.min(batchSize, count - (batch * batchSize));
           const employees = await this.generateEmployeeData(currentBatchSize);
-          
+
           // Construir query de inserción masiva
           const values = [];
           const params = [];
@@ -128,7 +91,7 @@ class LoadTestService {
               emp.fecha_nacimiento, emp.genero, emp.unidad_responsable,
               emp.subtipo_administrativo, emp.dependencia_id
             ];
-            
+
             const placeholders = rowParams.map(() => `$${paramIndex++}`).join(', ');
             values.push(`(${placeholders})`);
             params.push(...rowParams);
@@ -155,7 +118,7 @@ class LoadTestService {
         for (let batch = 0; batch < totalBatches; batch++) {
           const currentBatchSize = Math.min(batchSize, count - (batch * batchSize));
           const items = await this.generateInventoryData(currentBatchSize);
-          
+
           // Construir query de inserción masiva
           const values = [];
           const params = [];
@@ -168,7 +131,7 @@ class LoadTestService {
               item.fecha_compra, item.costo, item.dependencia_id,
               item.coordinacion_id
             ];
-            
+
             const placeholders = rowParams.map(() => `$${paramIndex++}`).join(', ');
             values.push(`(${placeholders})`);
             params.push(...rowParams);
@@ -436,13 +399,8 @@ class LoadTestService {
       `);
       results.empleados = employeesResult.rowCount;
 
-      // Eliminar inventario de prueba
-      const inventoryResult = await db.query(`
-        DELETE FROM inventario 
-        WHERE folio LIKE 'TEST%'
-        RETURNING id
-      `);
-      results.inventario = inventoryResult.rowCount;
+      // Eliminar inventario de prueba - tabla eliminada, skip
+      results.inventario = 0;
 
       return {
         success: true,
@@ -475,10 +433,8 @@ class LoadTestService {
         SELECT 
           (SELECT COUNT(*) FROM usuarios) as total_usuarios,
           (SELECT COUNT(*) FROM empleados) as total_empleados,
-          (SELECT COUNT(*) FROM inventario) as total_inventario,
           (SELECT COUNT(*) FROM usuarios WHERE email LIKE '%test%') as test_usuarios,
-          (SELECT COUNT(*) FROM empleados WHERE email LIKE '%test%' OR rfc LIKE 'TEST%') as test_empleados,
-          (SELECT COUNT(*) FROM inventario WHERE folio LIKE 'TEST%') as test_inventario
+          (SELECT COUNT(*) FROM empleados WHERE email LIKE '%test%' OR rfc LIKE 'TEST%') as test_empleados
       `);
 
       stats.database = dbStats.rows[0];

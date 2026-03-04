@@ -1,6 +1,6 @@
-const db = require('../config/database');
+﻿const db = require('../config/database');
 
-// Obtener todos los conceptos de nómina
+// Obtener todos los conceptos de nÃ³mina
 const getConceptosNomina = async (req, res) => {
   try {
     const { activo } = req.query;
@@ -25,7 +25,7 @@ const getConceptosNomina = async (req, res) => {
     console.error('Error en getConceptosNomina:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al obtener conceptos de nómina'
+      message: 'Error al obtener conceptos de nÃ³mina'
     });
   }
 };
@@ -69,7 +69,6 @@ const getEstatusFirmas = async (req, res) => {
           '[]'::json
         ) as conceptos
       FROM empleados e
-      LEFT JOIN dependencias d ON e.dependencia_id = d.id
       LEFT JOIN empleado_concepto_nomina ecn ON e.id = ecn.empleado_id
       LEFT JOIN conceptos_nomina cn ON ecn.concepto_nomina_id = cn.id
       WHERE e.activo = true
@@ -139,7 +138,7 @@ const getEstatusFirmas = async (req, res) => {
   }
 };
 
-// Asignar concepto de nómina a un empleado
+// Asignar concepto de nÃ³mina a un empleado
 const asignarConceptoNomina = async (req, res) => {
   try {
     const { empleado_id, concepto_nomina_id, periodo_aplicacion, observaciones } = req.body;
@@ -158,11 +157,11 @@ const asignarConceptoNomina = async (req, res) => {
     if (concepto.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Concepto de nómina no encontrado'
+        message: 'Concepto de nÃ³mina no encontrado'
       });
     }
     
-    // Verificar si ya existe la asignación
+    // Verificar si ya existe la asignaciÃ³n
     const existente = await db.query(
       'SELECT id FROM empleado_concepto_nomina WHERE empleado_id = $1 AND concepto_nomina_id = $2 AND periodo_aplicacion = $3',
       [empleado_id, concepto_nomina_id, periodo_aplicacion]
@@ -171,7 +170,7 @@ const asignarConceptoNomina = async (req, res) => {
     if (existente.rows.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'El concepto ya está asignado al empleado para este periodo'
+        message: 'El concepto ya estÃ¡ asignado al empleado para este periodo'
       });
     }
     
@@ -185,14 +184,14 @@ const asignarConceptoNomina = async (req, res) => {
     
     res.status(201).json({
       success: true,
-      message: 'Concepto de nómina asignado exitosamente',
+      message: 'Concepto de nÃ³mina asignado exitosamente',
       data: result.rows[0]
     });
   } catch (error) {
     console.error('Error en asignarConceptoNomina:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al asignar concepto de nómina'
+      message: 'Error al asignar concepto de nÃ³mina'
     });
   }
 };
@@ -234,7 +233,7 @@ const registrarFirma = async (req, res) => {
   }
 };
 
-// Desactivar concepto de nómina de un empleado
+// Desactivar concepto de nÃ³mina de un empleado
 const desactivarConceptoNomina = async (req, res) => {
   try {
     const { id } = req.params;
@@ -256,14 +255,14 @@ const desactivarConceptoNomina = async (req, res) => {
     
     res.json({
       success: true,
-      message: 'Concepto de nómina desactivado exitosamente',
+      message: 'Concepto de nÃ³mina desactivado exitosamente',
       data: result.rows[0]
     });
   } catch (error) {
     console.error('Error en desactivarConceptoNomina:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al desactivar concepto de nómina'
+      message: 'Error al desactivar concepto de nÃ³mina'
     });
   }
 };
@@ -317,3 +316,4 @@ module.exports = {
   desactivarConceptoNomina,
   getResumenFirmasPendientes
 };
+

@@ -1,4 +1,4 @@
-name: Deploy SIAF Automático
+name: Deploy a Producción — SIAF Nóminas
 
 on:
   push:
@@ -7,32 +7,41 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, siaf]
     steps:
-      - name: Actualizar Código y Build en VPS
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            # Definir la ruta de Node y NPM manualmente para esta sesión
-            export PATH=$PATH:/root/.nvm/versions/node/v24.11.1/bin
+      - name: Descargar código
+        uses: actions/checkout@v4
 
-            cd /var/www/SIAF
-            # Forzar sincronización exacta con el repositorio (elimina cambios manuales en VPS)
-            git fetch --all
-            git reset --hard origin/main
-            git pull origin main
+      - name: Instalar dependencias del Servidor
+        run: |
+          cd server
+          npm install --production
 
-            # Backend
-            cd server
-            npm install --production
+      - name: Construir Frontend (Client)
+        run: |
+          cd client
+          npm install
+          npm run build
 
-            # Frontend
-            cd ../client
-            npm install
-            npm run build
+      - name: Desplegar archivos con rsync
+        run: |
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='node_modules' \
+            --exclude='client/node_modules' \
+            . /var/www/siaf-nominas/
 
-            # Reiniciar con PM2 usando el nombre de tu proceso
-            pm2 restart siaf-backend || pm2 start src/index.js --name siaf-backend
+      - name: Restaurar .env desde Backup (si no existe)
+        run: |
+          if [ ! -f /var/www/siaf-nominas/server/.env ]; then
+            cp /var/www/.env.siaf-nominas /var/www/siaf-nominas/server/.env
+            echo "⚠️ .env restaurado desde backup"
+          fi
+
+      - name: Reiniciar Servidor con PM2
+        run: |
+          cd /var/www/siaf-nominas/server
+          pm2 restart siaf-nominas --update-env || pm2 start src/index.js --name "siaf-nominas"
+          pm2 save
+          echo "🚀 Despliegue finalizado con éxito"

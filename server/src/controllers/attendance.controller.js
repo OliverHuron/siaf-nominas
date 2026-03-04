@@ -1,4 +1,4 @@
-const db = require('../config/database');
+﻿const db = require('../config/database');
 
 // Registrar entrada (Check-in)
 const checkIn = async (req, res) => {
@@ -6,7 +6,7 @@ const checkIn = async (req, res) => {
     const { empleado_id } = req.body;
     const fecha = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // Verificar que el empleado existe y está activo
+    // Verificar que el empleado existe y estÃ¡ activo
     const empleado = await db.query(
       'SELECT id, nombre, apellido_paterno, activo FROM empleados WHERE id = $1',
       [empleado_id]
@@ -22,7 +22,7 @@ const checkIn = async (req, res) => {
     if (!empleado.rows[0].activo) {
       return res.status(400).json({
         success: false,
-        message: 'El empleado no está activo'
+        message: 'El empleado no estÃ¡ activo'
       });
     }
 
@@ -53,7 +53,6 @@ const checkIn = async (req, res) => {
       `SELECT a.*, e.nombre, e.apellido_paterno, e.apellido_materno, e.puesto, d.nombre as dependencia_nombre
        FROM asistencias a
        JOIN empleados e ON e.id = a.empleado_id
-       LEFT JOIN dependencias d ON d.id = e.dependencia_id
        WHERE a.id = $1`,
       [result.rows[0].id]
     );
@@ -94,7 +93,7 @@ const checkOut = async (req, res) => {
     if (attendance.rows[0].hora_salida) {
       return res.status(400).json({
         success: false,
-        message: 'Ya se registró la salida para hoy',
+        message: 'Ya se registrÃ³ la salida para hoy',
         data: attendance.rows[0]
       });
     }
@@ -113,7 +112,6 @@ const checkOut = async (req, res) => {
       `SELECT a.*, e.nombre, e.apellido_paterno, e.apellido_materno, e.puesto, d.nombre as dependencia_nombre
        FROM asistencias a
        JOIN empleados e ON e.id = a.empleado_id
-       LEFT JOIN dependencias d ON d.id = e.dependencia_id
        WHERE a.id = $1`,
       [result.rows[0].id]
     );
@@ -144,7 +142,6 @@ const getAttendanceToday = async (req, res) => {
               d.nombre as dependencia_nombre
        FROM asistencias a
        JOIN empleados e ON e.id = a.empleado_id
-       LEFT JOIN dependencias d ON d.id = e.dependencia_id
        WHERE a.fecha = $1
        ORDER BY a.hora_entrada DESC`,
       [fecha]
@@ -175,7 +172,6 @@ const getAllAttendances = async (req, res) => {
              d.nombre as dependencia_nombre
       FROM asistencias a
       JOIN empleados e ON e.id = a.empleado_id
-      LEFT JOIN dependencias d ON d.id = e.dependencia_id
       WHERE 1=1
     `;
     const params = [];
@@ -235,7 +231,6 @@ const getAttendanceByEmployee = async (req, res) => {
              d.nombre as dependencia_nombre
       FROM asistencias a
       JOIN empleados e ON e.id = a.empleado_id
-      LEFT JOIN dependencias d ON d.id = e.dependencia_id
       WHERE a.empleado_id = $1
     `;
     const params = [id];
@@ -271,13 +266,13 @@ const getAttendanceByEmployee = async (req, res) => {
   }
 };
 
-// Obtener estadísticas de asistencias
+// Obtener estadÃ­sticas de asistencias
 const getAttendanceStats = async (req, res) => {
   try {
     const { fecha_inicio, fecha_fin } = req.query;
     const fecha = new Date().toISOString().split('T')[0];
 
-    // Estadísticas de hoy
+    // EstadÃ­sticas de hoy
     const todayStats = await db.query(`
       SELECT 
         COUNT(*) as total_registros,
@@ -295,7 +290,7 @@ const getAttendanceStats = async (req, res) => {
       'SELECT COUNT(*) as total FROM empleados WHERE activo = true'
     );
 
-    // Estadísticas del período si se especifica
+    // EstadÃ­sticas del perÃ­odo si se especifica
     let periodStats = null;
     if (fecha_inicio && fecha_fin) {
       periodStats = await db.query(`
@@ -328,7 +323,7 @@ const getAttendanceStats = async (req, res) => {
     console.error('Error en getAttendanceStats:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al obtener estadísticas'
+      message: 'Error al obtener estadÃ­sticas'
     });
   }
 };
@@ -396,7 +391,6 @@ const generateReport = async (req, res) => {
           THEN EXTRACT(EPOCH FROM (a.hora_salida - a.hora_entrada))/3600 
         END), 2) as horas_promedio
       FROM empleados e
-      LEFT JOIN dependencias d ON d.id = e.dependencia_id
       LEFT JOIN asistencias a ON a.empleado_id = e.id AND a.fecha >= $1 AND a.fecha <= $2
     `;
     const params = [fecha_inicio, fecha_fin];
@@ -440,3 +434,4 @@ module.exports = {
   updateAttendanceStatus,
   generateReport
 };
+

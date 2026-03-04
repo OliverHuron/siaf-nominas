@@ -3,34 +3,18 @@ import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
 const Login = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    nombre: '',
-    apellido_paterno: '',
-    apellido_materno: ''
-  });
-  const { login, register } = useAuth();
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
-    if (isLogin) {
-      await login(formData.email, formData.password);
-    } else {
-      await register(formData);
-    }
-
+    await login(formData.email, formData.password);
     setLoading(false);
   };
 
@@ -43,61 +27,7 @@ const Login = () => {
         </div>
 
         <div className="login-form-container">
-          <div className="form-tabs">
-            <button
-              className={`tab ${isLogin ? 'active' : ''}`}
-              onClick={() => setIsLogin(true)}
-            >
-              Iniciar Sesión
-            </button>
-            <button
-              className={`tab ${!isLogin ? 'active' : ''}`}
-              onClick={() => setIsLogin(false)}
-            >
-              Registrarse
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="login-form">
-            {!isLogin && (
-              <>
-                <div className="form-group">
-                  <label>Nombre</label>
-                  <input
-                    type="text"
-                    name="nombre"
-                    value={formData.nombre}
-                    onChange={handleChange}
-                    className="form-control"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Apellido Paterno</label>
-                  <input
-                    type="text"
-                    name="apellido_paterno"
-                    value={formData.apellido_paterno}
-                    onChange={handleChange}
-                    className="form-control"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Apellido Materno</label>
-                  <input
-                    type="text"
-                    name="apellido_materno"
-                    value={formData.apellido_materno}
-                    onChange={handleChange}
-                    className="form-control"
-                  />
-                </div>
-              </>
-            )}
-
             <div className="form-group">
               <label>Email</label>
               <input
@@ -128,7 +58,7 @@ const Login = () => {
               className="btn btn-primary btn-block"
               disabled={loading}
             >
-              {loading ? 'Procesando...' : isLogin ? 'Iniciar Sesión' : 'Registrarse'}
+              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </button>
           </form>
         </div>

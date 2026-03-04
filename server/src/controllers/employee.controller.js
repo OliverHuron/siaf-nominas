@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { broadcast } = require('../config/sse');
 const { parseEmployeesFromExcel, generateEmployeeTemplate } = require('../services/employee.service');
 
 // Background processing function with batch inserts
@@ -29,7 +30,7 @@ async function processImportInBackground(employees, job) {
           rowPlaceholders.push(`$${paramIndex++}`);
         }
         values.push(`(${rowPlaceholders.join(', ')})`);
-        
+
         params.push(
           emp.nombre, emp.apellido_paterno, emp.apellido_materno, emp.rfc,
           emp.email, emp.telefono, emp.tipo, emp.dependencia_id, emp.activo,
@@ -86,9 +87,8 @@ const getAllEmployees = async (req, res) => {
     } = req.query;
 
     let query = `
-      SELECT e.*, d.nombre as dependencia_nombre
+      SELECT e.*
       FROM empleados e
-      LEFT JOIN dependencias d ON e.dependencia_id = d.id
       WHERE 1=1
     `;
     const params = [];
@@ -147,7 +147,6 @@ const getAllEmployees = async (req, res) => {
     let countQuery = `
       SELECT COUNT(*) 
       FROM empleados e
-      LEFT JOIN dependencias d ON e.dependencia_id = d.id
       WHERE 1=1
     `;
     const countParams = [];
@@ -261,9 +260,8 @@ const getEmployeeById = async (req, res) => {
     const { id } = req.params;
 
     const result = await db.query(
-      `SELECT e.*, d.nombre as dependencia_nombre
+      `SELECT e.*
        FROM empleados e
-       LEFT JOIN dependencias d ON e.dependencia_id = d.id
        WHERE e.id = $1`,
       [id]
     );
@@ -360,6 +358,7 @@ const createEmployee = async (req, res) => {
         tipo, dependencia_id, activo, unidad_responsable, subtipo_administrativo]
     );
 
+    broadcast('employee_created', { id: result.rows[0].id });
     res.status(201).json({
       success: true,
       message: 'Empleado creado exitosamente',
@@ -467,6 +466,7 @@ const updateEmployee = async (req, res) => {
 
     console.log('[UPDATE_EMPLOYEE] Update successful:', result.rows[0]);
 
+    broadcast('employee_updated', { id: result.rows[0].id });
     res.json({
       success: true,
       message: 'Empleado actualizado exitosamente',
@@ -498,6 +498,7 @@ const deleteEmployee = async (req, res) => {
       });
     }
 
+    broadcast('employee_updated', { id: parseInt(id) });
     res.json({
       success: true,
       message: 'Empleado desactivado exitosamente',
@@ -542,7 +543,7 @@ const getEmployeeStats = async (req, res) => {
 const importEmployeesFromExcel = async (req, res) => {
   try {
     console.log('[IMPORT_EMPLOYEES] Starting import...');
-    
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -555,10 +556,10 @@ const importEmployeesFromExcel = async (req, res) => {
     // Generate unique job ID
     const { v4: uuidv4 } = require('uuid');
     const jobId = uuidv4();
-    
+
     const { importJobs, ImportJob } = require('../services/importJob.service');
     // Initialize job with unknown total rows initially
-    const job = new ImportJob(jobId, 0); 
+    const job = new ImportJob(jobId, 0);
     importJobs.set(jobId, job);
 
     res.json({
@@ -590,9 +591,9 @@ const importEmployeesFromExcel = async (req, res) => {
 async function processExcelStream(filePath, job) {
   const ExcelJS = require('exceljs');
   const fs = require('fs');
-  
+
   console.log('[STREAM] Starting Excel stream processing:', filePath);
-  
+
   const workbook = new ExcelJS.stream.xlsx.WorkbookReader(filePath, {
     worksheets: 'emit',
     sharedStrings: 'cache',
@@ -608,7 +609,7 @@ async function processExcelStream(filePath, job) {
   try {
     for await (const worksheetReader of workbook) {
       console.log('[STREAM] Reading worksheet:', worksheetReader.name);
-      
+
       for await (const row of worksheetReader) {
         // Skip empty rows
         if (!row.values || row.values.length === 0) continue;
@@ -624,13 +625,13 @@ async function processExcelStream(filePath, job) {
 
         // Map row to object
         const employee = mapRowToEmployee(rowValues, headers);
-        
+
         if (employee && employee.rfc) {
-           batch.push(employee);
-           totalRows++;
-           
-           // Update job total dynamically as we find rows
-           job.totalRows = totalRows; 
+          batch.push(employee);
+          totalRows++;
+
+          // Update job total dynamically as we find rows
+          job.totalRows = totalRows;
         }
 
         // Process batch
@@ -665,7 +666,7 @@ function mapRowToEmployee(rowValues, headers) {
   // Simple mapping based on index or header name matching
   // Assuming standard template order or finding index
   // For robustness, let's map by header name if possible, or fallback to index
-  
+
   const getVal = (headerName, defaultVal = null) => {
     const idx = headers.findIndex(h => h && h.toString().toLowerCase().includes(headerName.toLowerCase()));
     if (idx !== -1 && rowValues[idx] !== undefined) return rowValues[idx];
@@ -694,26 +695,26 @@ async function processBatch(batch, job) {
   // Reuse the exact same bulk insert logic
   // ... (Insert logic here, simplified for brevity but robust)
   try {
-      const values = [];
-      const params = [];
-      let paramIndex = 1;
+    const values = [];
+    const params = [];
+    let paramIndex = 1;
 
-      batch.forEach((emp) => {
-        const rowPlaceholders = [];
-        for (let j = 0; j < 11; j++) {
-          rowPlaceholders.push(`$${paramIndex++}`);
-        }
-        values.push(`(${rowPlaceholders.join(', ')})`);
-        
-        params.push(
-          emp.nombre, emp.apellido_paterno, emp.apellido_materno, emp.rfc,
-          emp.email, emp.telefono, emp.tipo, emp.dependencia_id, emp.activo,
-          emp.unidad_responsable, emp.subtipo_administrativo
-        );
-      });
+    batch.forEach((emp) => {
+      const rowPlaceholders = [];
+      for (let j = 0; j < 11; j++) {
+        rowPlaceholders.push(`$${paramIndex++}`);
+      }
+      values.push(`(${rowPlaceholders.join(', ')})`);
 
-      // Insert and capture inserted IDs
-      const query = `
+      params.push(
+        emp.nombre, emp.apellido_paterno, emp.apellido_materno, emp.rfc,
+        emp.email, emp.telefono, emp.tipo, emp.dependencia_id, emp.activo,
+        emp.unidad_responsable, emp.subtipo_administrativo
+      );
+    });
+
+    // Insert and capture inserted IDs
+    const query = `
         INSERT INTO empleados 
         (nombre, apellido_paterno, apellido_materno, rfc, email, telefono, 
          tipo, dependencia_id, activo, unidad_responsable, subtipo_administrativo)
@@ -722,14 +723,14 @@ async function processBatch(batch, job) {
         RETURNING id
       `;
 
-      const result = await db.query(query, params);
-      const imported = result.rowCount;
-      const failed = batch.length - imported; // Actually "duplicates skipped"
+    const result = await db.query(query, params);
+    const imported = result.rowCount;
+    const failed = batch.length - imported; // Actually "duplicates skipped"
 
-      job.updateProgress(job.processedRows + batch.length, job.importedRows + imported, job.failedRows + failed);
+    job.updateProgress(job.processedRows + batch.length, job.importedRows + imported, job.failedRows + failed);
   } catch (err) {
-      console.error('Batch insert error:', err);
-      job.updateProgress(job.processedRows + batch.length, job.importedRows, job.failedRows + batch.length, [err.message]);
+    console.error('Batch insert error:', err);
+    job.updateProgress(job.processedRows + batch.length, job.importedRows, job.failedRows + batch.length, [err.message]);
   }
 }
 

@@ -1,4 +1,4 @@
-const pool = require('../config/database');
+﻿const pool = require('../config/database');
 
 class EmailTemplateController {
   // Obtener todas las plantillas
@@ -8,7 +8,7 @@ class EmailTemplateController {
         SELECT * FROM email_templates 
         ORDER BY created_at DESC
       `);
-      
+
       res.json({
         success: true,
         data: result.rows
@@ -26,7 +26,7 @@ class EmailTemplateController {
   createTemplate = async (req, res) => {
     try {
       const { name, subject, message, variables } = req.body;
-      
+
       if (!name || !subject || !message) {
         return res.status(400).json({
           success: false,
@@ -124,7 +124,7 @@ class EmailTemplateController {
     try {
       const { year = new Date().getFullYear() } = req.query;
 
-      // Consulta compleja para obtener empleados activos sin faltas en el año
+      // Consulta compleja para obtener empleados activos sin faltas en el aÃ±o
       const result = await pool.query(`
         WITH employee_faults AS (
           SELECT 
@@ -156,10 +156,8 @@ class EmailTemplateController {
           e.apellido_materno,
           e.email,
           e.puesto,
-          d.nombre as dependencia,
           COALESCE(ef.total_faults, 0) as total_faults
         FROM empleados e
-        LEFT JOIN dependencias d ON e.dependencia_id = d.id
         LEFT JOIN employee_faults ef ON e.id = ef.empleado_id
         WHERE 
           e.activo = true 
@@ -169,7 +167,7 @@ class EmailTemplateController {
         ORDER BY e.apellido_paterno, e.apellido_materno, e.nombre
       `, [year]);
 
-      // También obtener todos los empleados activos para comparación
+      // TambiÃ©n obtener todos los empleados activos para comparaciÃ³n
       const allActiveResult = await pool.query(`
         SELECT 
           e.id,
@@ -177,10 +175,8 @@ class EmailTemplateController {
           e.apellido_paterno,
           e.apellido_materno,
           e.email,
-          e.puesto,
-          d.nombre as dependencia
+          e.puesto
         FROM empleados e
-        LEFT JOIN dependencias d ON e.dependencia_id = d.id
         WHERE 
           e.activo = true 
           AND e.email IS NOT NULL 
@@ -247,10 +243,8 @@ class EmailTemplateController {
       // Obtener datos del empleado
       const employeeResult = await pool.query(`
         SELECT 
-          e.*,
-          d.nombre as dependencia
+          e.*
         FROM empleados e
-        LEFT JOIN dependencias d ON e.dependencia_id = d.id
         WHERE e.id = $1
       `, [employeeId]);
 
@@ -274,7 +268,7 @@ class EmailTemplateController {
         puesto: employee.puesto || '',
         dependencia: employee.dependencia || '',
         fecha_actual: new Date().toLocaleDateString('es-ES'),
-        año_actual: new Date().getFullYear()
+        ano_actual: new Date().getFullYear()
       };
 
       const processed = this.processTemplate(template, variables);

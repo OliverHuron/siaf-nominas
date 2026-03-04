@@ -19,7 +19,7 @@ const register = async (req, res) => {
     // LÓGICA INTELIGENTE: Si no hay usuarios admin, el primero se convierte en admin
     const adminCount = await db.query('SELECT COUNT(*) FROM usuarios WHERE role = $1', ['admin']);
     const isFirstAdmin = parseInt(adminCount.rows[0].count) === 0;
-    
+
     // Determinar rol: Si no hay admins, este será admin. Si no se especifica rol, será 'usuario'
     const userRole = isFirstAdmin ? 'admin' : (role || 'usuario');
 
@@ -43,8 +43,8 @@ const register = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRE }
     );
 
-    const message = isFirstAdmin ? 
-      'Primer administrador creado exitosamente' : 
+    const message = isFirstAdmin ?
+      'Primer administrador creado exitosamente' :
       'Usuario registrado exitosamente';
 
     res.status(201).json({
@@ -67,11 +67,11 @@ const login = async (req, res) => {
   try {
     console.log('[AUTH] Raw request body:', req.body);
     console.log('[AUTH] Request headers:', req.headers);
-    
+
     const { email, password } = req.body;
-    
-    console.log('[AUTH] Login attempt:', { 
-      email, 
+
+    console.log('[AUTH] Login attempt:', {
+      email,
       passwordLength: password?.length,
       emailType: typeof email,
       passwordType: typeof password,
@@ -88,14 +88,14 @@ const login = async (req, res) => {
 
     // Buscar usuario
     const result = await db.query('SELECT * FROM usuarios WHERE email = $1 AND activo = true', [email]);
-    
-    console.log('[AUTH] User search result:', { 
-      found: result.rows.length > 0, 
+
+    console.log('[AUTH] User search result:', {
+      found: result.rows.length > 0,
       email: email,
       userCount: result.rows.length,
       queryUsed: 'SELECT * FROM usuarios WHERE email = $1 AND activo = true'
     });
-    
+
     if (result.rows.length === 0) {
       console.log('[AUTH] User not found or inactive');
       return res.status(401).json({
@@ -110,7 +110,7 @@ const login = async (req, res) => {
     // Verificar contraseña
     const isValidPassword = await bcrypt.compare(password, user.password);
     console.log('[AUTH] Password validation:', { isValid: isValidPassword });
-    
+
     if (!isValidPassword) {
       console.log('[AUTH] Invalid password');
       return res.status(401).json({
@@ -158,7 +158,6 @@ const getCurrentUser = async (req, res) => {
         role,
         activo,
         created_at,
-        dependencia_id,
         coordinacion_id
        FROM usuarios 
        WHERE id = $1`,

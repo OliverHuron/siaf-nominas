@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  FaHome, FaBoxes, FaUsers, FaCalendarCheck, FaFileAlt, 
-  FaCog, FaUsersCog, FaBuilding, FaChalkboardTeacher, 
+import {
+  FaHome, FaUsers, FaCalendarCheck,
+  FaUsersCog,
   FaBars, FaTimes, FaSignOutAlt, FaEnvelope, FaChevronDown, FaChevronRight,
-  FaClipboardList, FaHistory
+  FaHistory
 } from 'react-icons/fa';
 import './Layout.css';
 
@@ -13,11 +13,10 @@ const Layout = () => {
   // Sidebar siempre abierto en desktop, solo colapsable en mobile
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sigapOpen, setSigapOpen] = useState(true);
-  const [inventarioOpen, setInventarioOpen] = useState(true);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
-  
+
   // Manejo de responsive - solo en mobile
   useEffect(() => {
     const handleResize = () => {
@@ -34,16 +33,6 @@ const Layout = () => {
   const menuItems = [
     { path: '/dashboard', icon: <FaHome />, label: 'Dashboard', type: 'link' },
     {
-      label: 'Inventario',
-      icon: <FaBoxes />,
-      type: 'group',
-      expanded: inventarioOpen,
-      toggle: () => setInventarioOpen(!inventarioOpen),
-      children: [
-        { path: '/inventory', icon: <FaBoxes />, label: 'Ver Todo' }
-      ]
-    },
-    {
       label: 'SIGAP',
       icon: <FaUsers />,
       type: 'group',
@@ -53,19 +42,13 @@ const Layout = () => {
         { path: '/employees', icon: <FaUsers />, label: 'Registro de Empleados' },
         { path: '/attendance', icon: <FaCalendarCheck />, label: 'Asistencias' },
         { path: '/emails', icon: <FaEnvelope />, label: 'Correos' },
-        { path: '/email-history', icon: <FaHistory />, label: 'Historial de Correos' },
-        { path: '/control-interno', icon: <FaClipboardList />, label: 'Control Interno', adminCoordinadorOnly: true }
+        { path: '/email-history', icon: <FaHistory />, label: 'Historial de Correos' }
       ]
     },
-    { path: '/requests', icon: <FaFileAlt />, label: 'Solicitudes', type: 'link' },
-    { path: '/fichas-tecnicas', icon: <FaClipboardList />, label: 'Fichas Técnicas', type: 'link' },
-    { path: '/buildings', icon: <FaBuilding />, label: 'Control de Butacas', type: 'link' },
-    { path: '/classrooms', icon: <FaChalkboardTeacher />, label: 'Control de Aulas', type: 'link' },
-    { path: '/dependencies', icon: <FaCog />, label: 'Configuración', type: 'link' },
     { path: '/users', icon: <FaUsersCog />, label: 'Usuarios Admin', type: 'link', adminOnly: true }
   ];
 
-  const filteredMenuItems = menuItems.filter(item => 
+  const filteredMenuItems = menuItems.filter(item =>
     !item.adminOnly || user?.role === 'admin'
   );
 
@@ -94,7 +77,7 @@ const Layout = () => {
     if (item.type === 'group') {
       return (
         <div key={item.label} className="menu-group">
-          <div 
+          <div
             className="menu-group-header"
             onClick={item.toggle}
           >
@@ -110,7 +93,7 @@ const Layout = () => {
                 // Filtrar items según rol
                 if (child.adminOnly && user?.role !== 'admin') return null;
                 if (child.adminCoordinadorOnly && user?.role !== 'admin' && user?.role !== 'coordinador') return null;
-                
+
                 return (
                   <Link
                     key={child.path}
@@ -148,15 +131,15 @@ const Layout = () => {
       {sidebarOpen && window.innerWidth < 768 && (
         <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
       )}
-      
+
       <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <div className="logo-container">
             <div className="logo-icon">S</div>
             <span className="logo-text">SIAF</span>
           </div>
-          <button 
-            className="sidebar-close" 
+          <button
+            className="sidebar-close"
             onClick={() => setSidebarOpen(false)}
             aria-label="Cerrar menú"
           >
@@ -173,8 +156,8 @@ const Layout = () => {
         <header className="top-header">
           <div className="header-left">
             {/* Botón solo visible en mobile */}
-            <button 
-              className="menu-toggle mobile-only" 
+            <button
+              className="menu-toggle mobile-only"
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label="Abrir menú"
             >
@@ -182,10 +165,10 @@ const Layout = () => {
             </button>
             <h1 className="page-title">Sistema Integral de Administración Facultativa</h1>
           </div>
-          
+
           <div className="header-right">
             <div className="profile-dropdown">
-              <button 
+              <button
                 className="profile-button"
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
               >
@@ -193,7 +176,7 @@ const Layout = () => {
                   {user?.nombre?.charAt(0)}{user?.apellido_paterno?.charAt(0)}
                 </div>
               </button>
-              
+
               {profileDropdownOpen && (
                 <div className="dropdown-menu">
                   <div className="dropdown-header">
