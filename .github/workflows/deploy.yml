@@ -12,6 +12,19 @@ jobs:
       - name: Descargar código
         uses: actions/checkout@v4
 
+      - name: Asegurar permisos
+        run: |
+          sudo chown -R oliver:oliver /var/www/siaf-nominas || true
+
+      - name: Desplegar archivos con rsync
+        run: |
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='node_modules' \
+            --exclude='client/node_modules' \
+            . /var/www/siaf-nominas/
+
       - name: Instalar dependencias del Servidor
         run: |
           cd /var/www/siaf-nominas/server
@@ -22,15 +35,6 @@ jobs:
           cd client
           npm install
           CI=false npm run build
-
-      - name: Desplegar archivos con rsync
-        run: |
-          rsync -av --delete \
-            --exclude='.git' \
-            --exclude='.env' \
-            --exclude='node_modules' \
-            --exclude='client/node_modules' \
-            . /var/www/siaf-nominas/
 
       - name: Restaurar .env desde Backup (si no existe)
         run: |
@@ -56,6 +60,7 @@ jobs:
               echo "⏭ $filename ya ejecutada, saltando"
             fi
           done
+
       - name: Reiniciar Servidor con PM2
         run: |
           cd /var/www/siaf-nominas/server
