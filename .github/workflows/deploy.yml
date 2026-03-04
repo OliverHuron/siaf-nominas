@@ -32,7 +32,7 @@ jobs:
 
       - name: Construir Frontend (Client)
         run: |
-          cd client
+          cd /var/www/siaf-nominas/client
           npm install
           CI=false npm run build
 
