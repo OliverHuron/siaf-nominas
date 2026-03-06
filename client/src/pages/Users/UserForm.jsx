@@ -54,7 +54,7 @@ const UserForm = ({
 
   const tabs = [
     { id: 'personal', label: 'Información Personal', icon: <FaUser /> },
-    { id: 'organizacion', label: 'Organización', icon: <FaIdCard /> }
+    { id: 'organizacion', label: 'Organización', icon: <FaBriefcase /> }
   ];
 
   return (
