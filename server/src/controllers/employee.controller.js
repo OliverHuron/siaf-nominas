@@ -26,13 +26,13 @@ async function processImportInBackground(employees, job) {
 
       batch.forEach((emp) => {
         const rowPlaceholders = [];
-        for (let j = 0; j < 11; j++) {
+        for (let j = 0; j < 10; j++) {
           rowPlaceholders.push(`$${paramIndex++}`);
         }
         values.push(`(${rowPlaceholders.join(', ')})`);
 
         params.push(
-          emp.nombre, emp.apellido_paterno, emp.apellido_materno, emp.rfc,
+          emp.nombre, emp.apellido_paterno, emp.apellido_materno,
           emp.email, emp.telefono, emp.tipo, emp.dependencia_id, emp.activo,
           emp.unidad_responsable, emp.subtipo_administrativo
         );
@@ -40,10 +40,10 @@ async function processImportInBackground(employees, job) {
 
       const query = `
         INSERT INTO empleados 
-        (nombre, apellido_paterno, apellido_materno, rfc, email, telefono, 
+        (nombre, apellido_paterno, apellido_materno, email, telefono, 
          tipo, dependencia_id, activo, unidad_responsable, subtipo_administrativo)
         VALUES ${values.join(', ')}
-        ON CONFLICT (rfc) DO NOTHING
+        ON CONFLICT (email) DO NOTHING
         RETURNING id
       `;
 
@@ -104,8 +104,7 @@ const getAllEmployees = async (req, res) => {
     if (search) {
       query += ` AND (
         LOWER(e.nombre || ' ' || e.apellido_paterno || ' ' || COALESCE(e.apellido_materno, '')) LIKE LOWER($${paramCount})
-        OR LOWER(e.email) LIKE LOWER($${paramCount})
-        OR LOWER(e.rfc) LIKE LOWER($${paramCount})
+        OR LOWER(COALESCE(e.email, '')) LIKE LOWER($${paramCount})
       )`;
       params.push(`%${search}%`);
       paramCount++;
@@ -156,8 +155,7 @@ const getAllEmployees = async (req, res) => {
     if (search) {
       countQuery += ` AND (
         LOWER(e.nombre || ' ' || e.apellido_paterno || ' ' || COALESCE(e.apellido_materno, '')) LIKE LOWER($${countParamCount})
-        OR LOWER(e.email) LIKE LOWER($${countParamCount})
-        OR LOWER(e.rfc) LIKE LOWER($${countParamCount})
+        OR LOWER(COALESCE(e.email, '')) LIKE LOWER($${countParamCount})
       )`;
       countParams.push(`%${search}%`);
       countParamCount++;
@@ -308,30 +306,14 @@ const createEmployee = async (req, res) => {
       nombre,
       apellido_paterno,
       apellido_materno,
-      rfc,
       email,
       telefono,
       tipo,
       dependencia_id,
-      puesto,
-      fecha_ingreso,
       activo = true,
       unidad_responsable,
       subtipo_administrativo
     } = req.body;
-
-    // Validar RFC único
-    const existingRFC = await db.query(
-      'SELECT id FROM empleados WHERE rfc = $1',
-      [rfc]
-    );
-
-    if (existingRFC.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'El RFC ya está registrado'
-      });
-    }
 
     // Validar email único si se proporciona
     if (email) {
@@ -339,22 +321,18 @@ const createEmployee = async (req, res) => {
         'SELECT id FROM empleados WHERE email = $1',
         [email]
       );
-
       if (existingEmail.rows.length > 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'El email ya está registrado'
-        });
+        return res.status(400).json({ success: false, message: 'El email ya está registrado' });
       }
     }
 
     const result = await db.query(
       `INSERT INTO empleados 
-       (nombre, apellido_paterno, apellido_materno, rfc, email, telefono, 
+       (nombre, apellido_paterno, apellido_materno, email, telefono, 
         tipo, dependencia_id, activo, unidad_responsable, subtipo_administrativo)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [nombre, apellido_paterno, apellido_materno, rfc, email, telefono,
+      [nombre, apellido_paterno, apellido_materno, email, telefono,
         tipo, dependencia_id, activo, unidad_responsable, subtipo_administrativo]
     );
 
@@ -396,56 +374,29 @@ const updateEmployee = async (req, res) => {
       nombre,
       apellido_paterno,
       apellido_materno,
-      rfc,
       email,
       telefono,
       tipo,
       dependencia_id,
-      puesto,
       activo,
       unidad_responsable,
       subtipo_administrativo
     } = req.body;
 
-    // Verificar que el empleado existe
     const existing = await db.query('SELECT id FROM empleados WHERE id = $1', [id]);
     if (existing.rows.length === 0) {
-      console.log('[UPDATE_EMPLOYEE] Employee not found:', id);
-      return res.status(404).json({
-        success: false,
-        message: 'Empleado no encontrado'
-      });
+      return res.status(404).json({ success: false, message: 'Empleado no encontrado' });
     }
 
-    console.log('[UPDATE_EMPLOYEE] Employee exists, validating RFC...');
+    console.log('[UPDATE_EMPLOYEE] Employee exists, validating email...');
 
-    // Validar RFC único (excepto el mismo empleado)
-    const existingRFC = await db.query(
-      'SELECT id FROM empleados WHERE rfc = $1 AND id != $2',
-      [rfc, id]
-    );
-
-    if (existingRFC.rows.length > 0) {
-      console.log('[UPDATE_EMPLOYEE] RFC already exists:', rfc);
-      return res.status(400).json({
-        success: false,
-        message: 'El RFC ya está registrado'
-      });
-    }
-
-    // Validar email único si se proporciona
     if (email) {
       const existingEmail = await db.query(
         'SELECT id FROM empleados WHERE email = $1 AND id != $2',
         [email, id]
       );
-
       if (existingEmail.rows.length > 0) {
-        console.log('[UPDATE_EMPLOYEE] Email already exists:', email);
-        return res.status(400).json({
-          success: false,
-          message: 'El email ya está registrado'
-        });
+        return res.status(400).json({ success: false, message: 'El email ya está registrado' });
       }
     }
 
@@ -454,13 +405,13 @@ const updateEmployee = async (req, res) => {
     const result = await db.query(
       `UPDATE empleados 
        SET nombre = $1, apellido_paterno = $2, apellido_materno = $3,
-           rfc = $4, email = $5, telefono = $6, tipo = $7,
-           dependencia_id = $8, activo = $9,
-           unidad_responsable = $10, subtipo_administrativo = $11,
+           email = $4, telefono = $5, tipo = $6,
+           dependencia_id = $7, activo = $8,
+           unidad_responsable = $9, subtipo_administrativo = $10,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $12
+       WHERE id = $11
        RETURNING *`,
-      [nombre, apellido_paterno, apellido_materno, rfc, email, telefono,
+      [nombre, apellido_paterno, apellido_materno, email, telefono,
         tipo, dependencia_id, activo, unidad_responsable, subtipo_administrativo, id]
     );
 
@@ -626,11 +577,9 @@ async function processExcelStream(filePath, job) {
         // Map row to object
         const employee = mapRowToEmployee(rowValues, headers);
 
-        if (employee && employee.rfc) {
+        if (employee && employee.nombre) {
           batch.push(employee);
           totalRows++;
-
-          // Update job total dynamically as we find rows
           job.totalRows = totalRows;
         }
 
@@ -673,16 +622,15 @@ function mapRowToEmployee(rowValues, headers) {
     return defaultVal;
   };
 
-  const rfc = getVal('rfc');
-  if (!rfc) return null;
+  const nombre = getVal('nombre');
+  if (!nombre) return null;
 
   return {
-    nombre: getVal('nombre', ''),
+    nombre: String(nombre).trim(),
     apellido_paterno: getVal('paterno', '') || getVal('apellido paterno', ''),
     apellido_materno: getVal('materno', '') || getVal('apellido materno', ''),
-    rfc: String(rfc).toUpperCase().trim(),
-    email: getVal('email', ''),
-    telefono: getVal('tel', '') || getVal('teléfono', ''),
+    email: getVal('email', null),
+    telefono: getVal('tel', null) || getVal('teléfono', null),
     tipo: getVal('tipo', 'docente').toLowerCase(),
     unidad_responsable: getVal('unidad', null),
     subtipo_administrativo: getVal('subtipo', null),
@@ -701,25 +649,24 @@ async function processBatch(batch, job) {
 
     batch.forEach((emp) => {
       const rowPlaceholders = [];
-      for (let j = 0; j < 11; j++) {
+      for (let j = 0; j < 10; j++) {
         rowPlaceholders.push(`$${paramIndex++}`);
       }
       values.push(`(${rowPlaceholders.join(', ')})`);
 
       params.push(
-        emp.nombre, emp.apellido_paterno, emp.apellido_materno, emp.rfc,
+        emp.nombre, emp.apellido_paterno, emp.apellido_materno,
         emp.email, emp.telefono, emp.tipo, emp.dependencia_id, emp.activo,
         emp.unidad_responsable, emp.subtipo_administrativo
       );
     });
 
-    // Insert and capture inserted IDs
     const query = `
         INSERT INTO empleados 
-        (nombre, apellido_paterno, apellido_materno, rfc, email, telefono, 
+        (nombre, apellido_paterno, apellido_materno, email, telefono, 
          tipo, dependencia_id, activo, unidad_responsable, subtipo_administrativo)
         VALUES ${values.join(', ')}
-        ON CONFLICT (rfc) DO NOTHING
+        ON CONFLICT (email) DO NOTHING
         RETURNING id
       `;
 
