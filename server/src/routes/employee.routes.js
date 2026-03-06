@@ -78,7 +78,6 @@ router.use(authMiddleware);
 const employeeValidation = [
   body('nombre').notEmpty().withMessage('El nombre es requerido'),
   body('apellido_paterno').notEmpty().withMessage('El apellido paterno es requerido'),
-  body('rfc').notEmpty().withMessage('El RFC es requerido').isLength({ min: 10, max: 13 }).withMessage('RFC debe tener entre 10 y 13 caracteres'),
   body('tipo').isIn(['docente', 'administrativo']).withMessage('Tipo de empleado inválido'),
   body('email').optional().isEmail().withMessage('Email inválido')
 ];
