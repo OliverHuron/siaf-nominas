@@ -1,19 +1,19 @@
 import React from 'react';
-import { 
-  FaTimes, FaUser, FaIdCard, FaEnvelope, FaPhone, 
+import {
+  FaTimes, FaUser, FaEnvelope, FaPhone,
   FaBriefcase, FaCheckCircle, FaEdit, FaTrash, FaMapMarkerAlt
 } from 'react-icons/fa';
 import './EmployeeDrawer.css';
 
-const EmployeeDrawer = ({ 
-  employee, 
-  isOpen, 
-  onClose, 
-  onEdit, 
+const EmployeeDrawer = ({
+  employee,
+  isOpen,
+  onClose,
+  onEdit,
   onDelete
 }) => {
   if (!employee) return null;
-  
+
   const getTipoBadge = (tipo) => {
     const badges = {
       docente: { color: '#3b82f6', bg: '#dbeafe', label: 'Docente' },
@@ -21,7 +21,7 @@ const EmployeeDrawer = ({
     };
     return badges[tipo] || badges.docente;
   };
-  
+
   const getUnidadLabel = (unidad) => {
     const unidades = {
       '231': '231 - Morelia',
@@ -31,17 +31,17 @@ const EmployeeDrawer = ({
     };
     return unidades[unidad] || unidad || 'No especificada';
   };
-  
+
   const tipoBadge = getTipoBadge(employee.tipo);
-  
+
   return (
     <>
       {/* Overlay */}
-      <div 
-        className={`drawer-overlay ${isOpen ? 'open' : ''}`} 
+      <div
+        className={`drawer-overlay ${isOpen ? 'open' : ''}`}
         onClick={onClose}
       />
-      
+
       {/* Drawer Panel */}
       <div className={`drawer-panel ${isOpen ? 'open' : ''}`}>
         {/* Header */}
@@ -52,27 +52,27 @@ const EmployeeDrawer = ({
             </div>
             <div>
               <h2>{employee.nombre} {employee.apellido_paterno} {employee.apellido_materno}</h2>
-              <p className="drawer-subtitle">{employee.rfc}</p>
+              <p className="drawer-subtitle">{employee.email || employee.tipo}</p>
             </div>
           </div>
           <button className="drawer-close" onClick={onClose}>
             <FaTimes />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="drawer-content">
-          
+
           {/* Estado y Tipo */}
           <div className="drawer-section">
             <div className="badges-row">
-              <span 
-                className="status-badge" 
+              <span
+                className="status-badge"
                 style={{ backgroundColor: tipoBadge.bg, color: tipoBadge.color }}
               >
                 <FaBriefcase /> {tipoBadge.label}
               </span>
-              <span 
+              <span
                 className={`status-badge ${employee.activo ? 'badge-active' : 'badge-inactive'}`}
               >
                 {employee.activo ? <FaCheckCircle /> : <FaTimes />}
@@ -80,7 +80,7 @@ const EmployeeDrawer = ({
               </span>
             </div>
           </div>
-          
+
           {/* Información Personal */}
           <div className="drawer-section">
             <h3 className="section-title">
@@ -90,72 +90,71 @@ const EmployeeDrawer = ({
               <DetailItem label="Nombre" value={employee.nombre} />
               <DetailItem label="Apellido Paterno" value={employee.apellido_paterno} />
               <DetailItem label="Apellido Materno" value={employee.apellido_materno || '-'} />
-              <DetailItem label="RFC" value={employee.rfc} icon={<FaIdCard />} />
             </div>
           </div>
-          
+
           {/* Información de Contacto */}
           <div className="drawer-section">
             <h3 className="section-title">
               <FaEnvelope /> Contacto
             </h3>
             <div className="detail-grid">
-              <DetailItem 
-                label="Email" 
-                value={employee.email || 'No especificado'} 
-                icon={<FaEnvelope />} 
+              <DetailItem
+                label="Email"
+                value={employee.email || 'No especificado'}
+                icon={<FaEnvelope />}
               />
-              <DetailItem 
-                label="Teléfono" 
-                value={employee.telefono || 'No especificado'} 
-                icon={<FaPhone />} 
+              <DetailItem
+                label="Teléfono"
+                value={employee.telefono || 'No especificado'}
+                icon={<FaPhone />}
               />
             </div>
           </div>
-          
+
           {/* Información Administrativa */}
           <div className="drawer-section">
             <h3 className="section-title">
               <FaBriefcase /> Información Administrativa
             </h3>
             <div className="detail-grid">
-              <DetailItem 
-                label="Tipo de Empleado" 
-                value={employee.tipo === 'docente' ? 'Docente' : 'Administrativo'} 
+              <DetailItem
+                label="Tipo de Empleado"
+                value={employee.tipo === 'docente' ? 'Docente' : 'Administrativo'}
               />
               {employee.tipo === 'docente' && employee.unidad_responsable && (
-                <DetailItem 
-                  label="Unidad Responsable" 
-                  value={getUnidadLabel(employee.unidad_responsable)} 
-                  icon={<FaMapMarkerAlt />} 
+                <DetailItem
+                  label="Unidad Responsable"
+                  value={getUnidadLabel(employee.unidad_responsable)}
+                  icon={<FaMapMarkerAlt />}
                 />
               )}
               {employee.tipo === 'administrativo' && employee.subtipo_administrativo && (
-                <DetailItem 
-                  label="Subtipo Administrativo" 
-                  value={employee.subtipo_administrativo} 
+                <DetailItem
+                  label="Subtipo Administrativo"
+                  value={employee.subtipo_administrativo}
                 />
               )}
-              <DetailItem 
-                label="Estado" 
-                value={employee.activo ? 'Activo' : 'Inactivo'} 
+              <DetailItem
+                label="Estado"
+                value={employee.activo ? 'Activo' : 'Inactivo'}
               />
             </div>
           </div>
-          
+
         </div>
-        
+
         {/* Footer con acciones */}
         <div className="drawer-footer">
-          <button 
-            className="btn-drawer btn-edit" 
+          <button
+            className="btn-drawer btn-edit"
             onClick={() => onEdit(employee)}
           >
             <FaEdit /> Editar
           </button>
           {employee.activo && (
-            <button 
-              className="btn-drawer btn-delete" 
+            <button
+              className="btn-drawer btn-delete"
               onClick={() => onDelete(employee.id)}
             >
               <FaTrash /> Desactivar

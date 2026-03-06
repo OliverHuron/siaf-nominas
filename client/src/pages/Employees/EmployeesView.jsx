@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { toast } from 'react-toastify';
 import { saveAs } from 'file-saver';
-import { FaPlus, FaEdit, FaTrash, FaSearch, FaUser, FaIdCard, FaEnvelope, FaPhone, FaBriefcase, FaSync, FaEye, FaFileExcel, FaDownload, FaUpload } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaSearch, FaUser, FaEnvelope, FaPhone, FaBriefcase, FaSync, FaEye, FaFileExcel, FaDownload, FaUpload } from 'react-icons/fa';
 import UniversalSkeleton from '../../components/UniversalSkeleton';
 import EmployeeDrawer from './EmployeeDrawer';
 import './EmployeesView.css';
@@ -34,12 +34,11 @@ const EmployeesView = () => {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     nombre: '',
     apellido_paterno: '',
     apellido_materno: '',
-    rfc: '',
     email: '',
     telefono: '',
     tipo_empleado: 'docente',
@@ -56,13 +55,13 @@ const EmployeesView = () => {
 
   // Estado para el job de importación en background
   const [importJobId, setImportJobId] = useState(null);
-  const [importProgress, setImportProgress] = useState({ 
-    processed: 0, 
-    total: 0, 
-    imported: 0, 
-    failed: 0, 
+  const [importProgress, setImportProgress] = useState({
+    processed: 0,
+    total: 0,
+    imported: 0,
+    failed: 0,
     progress: 0,
-    status: 'idle' 
+    status: 'idle'
   });
 
   // Polling del estado del job
@@ -89,7 +88,7 @@ const EmployeesView = () => {
             clearInterval(intervalId);
             setImporting(false);
             setImportJobId(null);
-            
+
             if (jobStatus.status === 'completed') {
               toast.success(`Importación completada: ${jobStatus.importedRows} importados, ${jobStatus.failedRows} fallidos`);
               setImportResult({
@@ -133,7 +132,7 @@ const EmployeesView = () => {
     try {
       setImporting(true);
       setImportResult(null); // Reset previous results
-      
+
       const response = await api.post('/api/employees/import', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -235,7 +234,6 @@ const EmployeesView = () => {
       nombre: formData.nombre,
       apellido_paterno: formData.apellido_paterno,
       apellido_materno: formData.apellido_materno,
-      rfc: formData.rfc,
       email: formData.email,
       telefono: formData.telefono,
       tipo: formData.tipo_empleado,
@@ -272,7 +270,6 @@ const EmployeesView = () => {
       nombre: employee.nombre,
       apellido_paterno: employee.apellido_paterno,
       apellido_materno: employee.apellido_materno || '',
-      rfc: employee.rfc,
       email: employee.email || '',
       telefono: employee.telefono || '',
       tipo_empleado: employee.tipo || 'docente',
@@ -304,7 +301,6 @@ const EmployeesView = () => {
       nombre: '',
       apellido_paterno: '',
       apellido_materno: '',
-      rfc: '',
       email: '',
       telefono: '',
       tipo_empleado: 'docente',
@@ -453,7 +449,7 @@ const EmployeesView = () => {
           <FaSearch className="search-icon" />
           <input
             type="text"
-            placeholder="Buscar por nombre, RFC o email..."
+            placeholder="Buscar por nombre o email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -510,7 +506,6 @@ const EmployeesView = () => {
               <thead>
                 <tr>
                   <th>Nombre Completo</th>
-                  <th>RFC</th>
                   <th>Email</th>
                   <th>Tipo</th>
                   <th>U.R / Subtipo</th>
@@ -521,7 +516,7 @@ const EmployeesView = () => {
               <tbody>
                 {displayedEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="empty-cell">
+                    <td colSpan="6" className="empty-cell">
                       No se encontraron empleados
                     </td>
                   </tr>
@@ -538,7 +533,6 @@ const EmployeesView = () => {
                           </strong>
                         </div>
                       </td>
-                      <td><span className="rfc-text">{employee.rfc}</span></td>
                       <td>{employee.email || '-'}</td>
                       <td>
                         <span className={`badge badge-${employee.tipo === 'docente' ? 'primary' : 'secondary'}`}>
@@ -658,19 +652,6 @@ const EmployeesView = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <label><FaIdCard /> RFC *</label>
-                    <input
-                      type="text"
-                      value={formData.rfc}
-                      onChange={(e) => setFormData({ ...formData, rfc: e.target.value.toUpperCase() })}
-                      maxLength="13"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
                     <label><FaEnvelope /> Email</label>
                     <input
                       type="email"
@@ -678,6 +659,9 @@ const EmployeesView = () => {
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />
                   </div>
+                </div>
+
+                <div className="form-row">
                   <div className="form-group">
                     <label><FaPhone /> Teléfono</label>
                     <input
@@ -685,6 +669,16 @@ const EmployeesView = () => {
                       value={formData.telefono}
                       onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
                     />
+                  </div>
+                  <div className="form-group">
+                    <label>Estado</label>
+                    <select
+                      value={formData.activo}
+                      onChange={(e) => setFormData({ ...formData, activo: e.target.value === 'true' })}
+                    >
+                      <option value="true">Activo</option>
+                      <option value="false">Inactivo</option>
+                    </select>
                   </div>
                 </div>
 
@@ -701,51 +695,36 @@ const EmployeesView = () => {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Estado</label>
-                    <select
-                      value={formData.activo}
-                      onChange={(e) => setFormData({ ...formData, activo: e.target.value === 'true' })}
-                    >
-                      <option value="true">Activo</option>
-                      <option value="false">Inactivo</option>
-                    </select>
+                    {formData.tipo_empleado === 'docente' ? (
+                      <>
+                        <label>Unidad Responsable</label>
+                        <select
+                          value={formData.unidad_responsable}
+                          onChange={(e) => setFormData({ ...formData, unidad_responsable: e.target.value })}
+                        >
+                          <option value="">Seleccionar...</option>
+                          <option value="231">231 - Morelia</option>
+                          <option value="231-1">231-1 - Cd. Hidalgo</option>
+                          <option value="231-2">231-2 - Lázaro Cárdenas</option>
+                          <option value="231-3">231-3 - Uruapan</option>
+                        </select>
+                      </>
+                    ) : (
+                      <>
+                        <label>Subtipo Administrativo *</label>
+                        <select
+                          value={formData.subtipo_administrativo}
+                          onChange={(e) => setFormData({ ...formData, subtipo_administrativo: e.target.value })}
+                          required
+                        >
+                          <option value="">Seleccionar...</option>
+                          <option value="Administrativo de Base">Administrativo de Base</option>
+                          <option value="Administrativo de Apoyo">Administrativo de Apoyo</option>
+                        </select>
+                      </>
+                    )}
                   </div>
                 </div>
-
-                {formData.tipo_empleado === 'docente' && (
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Unidad Responsable</label>
-                      <select
-                        value={formData.unidad_responsable}
-                        onChange={(e) => setFormData({ ...formData, unidad_responsable: e.target.value })}
-                      >
-                        <option value="">Seleccionar...</option>
-                        <option value="231">231 - Morelia</option>
-                        <option value="231-1">231-1 - Cd. Hidalgo</option>
-                        <option value="231-2">231-2 - Lázaro Cárdenas</option>
-                        <option value="231-3">231-3 - Uruapan</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {formData.tipo_empleado === 'administrativo' && (
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Subtipo Administrativo *</label>
-                      <select
-                        value={formData.subtipo_administrativo}
-                        onChange={(e) => setFormData({ ...formData, subtipo_administrativo: e.target.value })}
-                        required
-                      >
-                        <option value="">Seleccionar...</option>
-                        <option value="Administrativo de Base">Administrativo de Base</option>
-                        <option value="Administrativo de Apoyo">Administrativo de Apoyo</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="modal-footer">
@@ -812,13 +791,13 @@ const EmployeesView = () => {
                     <span>{importProgress.progress}%</span>
                   </div>
                   <div style={{ width: '100%', height: '10px', backgroundColor: '#f0f0f0', borderRadius: '5px', overflow: 'hidden' }}>
-                    <div 
-                      style={{ 
-                        width: `${importProgress.progress}%`, 
-                        height: '100%', 
-                        backgroundColor: '#4a90e2', 
-                        transition: 'width 0.3s ease' 
-                      }} 
+                    <div
+                      style={{
+                        width: `${importProgress.progress}%`,
+                        height: '100%',
+                        backgroundColor: '#4a90e2',
+                        transition: 'width 0.3s ease'
+                      }}
                     />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '0.9em', color: '#666' }}>

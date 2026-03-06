@@ -17,7 +17,7 @@ const pool = new Pool({
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  max: 20,  idleTimeoutMillis: 30000,
+  max: 20, idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
   ssl: false,
   // Configuración de codificación para caracteres especiales
@@ -31,7 +31,7 @@ pool.on('connect', (client) => {
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Error en PostgreSQL:', err);
+  console.error(' Error en PostgreSQL:', err);
   process.exit(-1);
 });
 

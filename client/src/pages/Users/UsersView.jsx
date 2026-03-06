@@ -11,11 +11,11 @@ const UsersView = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [stats, setStats] = useState({});
-  
+
   // Estados del formulario
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  
+
   // Modal de contraseña
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -80,19 +80,19 @@ const UsersView = () => {
   const handleFormSubmit = async (data) => {
     try {
       let response;
-      
+
       if (editingUser) {
         response = await api.put(`/api/users/${editingUser.id}`, data);
       } else {
         response = await api.post('/api/users', data);
       }
-      
+
       if (response.data.success) {
         setSuccess(editingUser ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente');
         setShowForm(false);
         setEditingUser(null);
         loadData();
-        
+
         setTimeout(() => setSuccess(''), 3000);
       }
     } catch (err) {
@@ -249,7 +249,6 @@ const UsersView = () => {
             <tr>
               <th>Usuario</th>
               <th>Email</th>
-              <th>RFC</th>
               <th>Teléfono</th>
               <th>Coordinación</th>
               <th>Rol</th>
@@ -271,7 +270,6 @@ const UsersView = () => {
                     </div>
                   </td>
                   <td>{user.email}</td>
-                  <td>{user.rfc || '-'}</td>
                   <td>{user.telefono || '-'}</td>
                   <td>
                     <span className="coordinacion-badge">
@@ -361,8 +359,8 @@ const UsersView = () => {
           <div className="modal-content password-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Cambiar Contraseña</h2>
-              <button 
-                className="modal-close" 
+              <button
+                className="modal-close"
                 onClick={() => setIsPasswordModalOpen(false)}
               >
                 ×
@@ -387,9 +385,9 @@ const UsersView = () => {
                 />
               </div>
               <div className="modal-actions">
-                <button 
-                  type="button" 
-                  className="btn-secondary" 
+                <button
+                  type="button"
+                  className="btn-secondary"
                   onClick={() => setIsPasswordModalOpen(false)}
                 >
                   Cancelar

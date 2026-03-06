@@ -8,17 +8,17 @@ const XLSX = require('xlsx');
 const parseEmployeesFromExcel = (fileBuffer) => {
     try {
         console.log('[PARSE_EXCEL] Starting parse, buffer size:', fileBuffer.length);
-        
+
         // Try reading with cellFormula and cellStyles disabled for better performance
-        const workbook = XLSX.read(fileBuffer, { 
+        const workbook = XLSX.read(fileBuffer, {
             type: 'buffer',
             cellFormula: false,
             cellStyles: false,
             sheetStubs: false
         });
-        
+
         console.log('[PARSE_EXCEL] Workbook sheets:', workbook.SheetNames);
-        
+
         if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
             console.log('[PARSE_EXCEL] No sheets found in workbook');
             return {
@@ -27,10 +27,10 @@ const parseEmployeesFromExcel = (fileBuffer) => {
                 errors: ['El archivo Excel no contiene hojas de datos']
             };
         }
-        
+
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        
+
         if (!worksheet) {
             console.log('[PARSE_EXCEL] Worksheet is undefined for sheet:', sheetName);
             return {
@@ -39,11 +39,11 @@ const parseEmployeesFromExcel = (fileBuffer) => {
                 errors: ['No se pudo leer la hoja de datos del archivo Excel']
             };
         }
-        
+
         // Debug worksheet info
         const range = worksheet['!ref'];
         console.log('[PARSE_EXCEL] Worksheet range:', range);
-        
+
         if (!range) {
             console.log('[PARSE_EXCEL] Worksheet has no range (empty sheet)');
             return {
@@ -52,7 +52,7 @@ const parseEmployeesFromExcel = (fileBuffer) => {
                 errors: ['La hoja de Excel está vacía']
             };
         }
-        
+
         // Try to see first few cells
         console.log('[PARSE_EXCEL] Cell A1:', worksheet['A1']);
         console.log('[PARSE_EXCEL] Cell A2:', worksheet['A2']);
@@ -61,7 +61,7 @@ const parseEmployeesFromExcel = (fileBuffer) => {
         // Convert to JSON with header row
         const rawData = XLSX.utils.sheet_to_json(worksheet, { defval: null });
         console.log('[PARSE_EXCEL] Rows found:', rawData.length);
-        
+
         if (rawData.length > 0) {
             console.log('[PARSE_EXCEL] First row columns:', Object.keys(rawData[0]));
             console.log('[PARSE_EXCEL] First row sample:', JSON.stringify(rawData[0]).substring(0, 200));
@@ -88,14 +88,6 @@ const parseEmployeesFromExcel = (fileBuffer) => {
             }
             if (!row['Apellido Paterno'] || row['Apellido Paterno'].toString().trim() === '') {
                 rowErrors.push(`Fila ${rowNumber}: Apellido Paterno es requerido`);
-            }
-            if (!row.RFC || row.RFC.toString().trim() === '') {
-                rowErrors.push(`Fila ${rowNumber}: RFC es requerido`);
-            } else {
-                const rfc = row.RFC.toString().trim().toUpperCase();
-                if (rfc.length < 10 || rfc.length > 13) {
-                    rowErrors.push(`Fila ${rowNumber}: RFC debe tener entre 10 y 13 caracteres`);
-                }
             }
             if (!row.Tipo || !['docente', 'administrativo'].includes(row.Tipo.toString().toLowerCase())) {
                 rowErrors.push(`Fila ${rowNumber}: Tipo debe ser "docente" o "administrativo"`);
@@ -140,7 +132,6 @@ const parseEmployeesFromExcel = (fileBuffer) => {
                     nombre: row.Nombre.toString().trim(),
                     apellido_paterno: row['Apellido Paterno'].toString().trim(),
                     apellido_materno: row['Apellido Materno'] ? row['Apellido Materno'].toString().trim() : null,
-                    rfc: row.RFC.toString().trim().toUpperCase(),
                     email: row.Email ? row.Email.toString().trim() : null,
                     telefono: row.Teléfono || row.Telefono ? (row.Teléfono || row.Telefono).toString().trim() : null,
                     tipo: tipo,
@@ -181,7 +172,6 @@ const generateEmployeeTemplate = () => {
             'Nombre': 'Juan',
             'Apellido Paterno': 'Pérez',
             'Apellido Materno': 'García',
-            'RFC': 'PEGJ850101ABC',
             'Email': 'juan.perez@example.com',
             'Teléfono': '4431234567',
             'Tipo': 'docente',
@@ -193,7 +183,6 @@ const generateEmployeeTemplate = () => {
             'Nombre': 'María',
             'Apellido Paterno': 'López',
             'Apellido Materno': 'Martínez',
-            'RFC': 'LOMM900215XYZ',
             'Email': 'maria.lopez@example.com',
             'Teléfono': '4439876543',
             'Tipo': 'administrativo',
@@ -212,7 +201,6 @@ const generateEmployeeTemplate = () => {
         { wch: 15 }, // Nombre
         { wch: 18 }, // Apellido Paterno
         { wch: 18 }, // Apellido Materno
-        { wch: 15 }, // RFC
         { wch: 25 }, // Email
         { wch: 12 }, // Teléfono
         { wch: 15 }, // Tipo

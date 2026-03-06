@@ -15,7 +15,6 @@ exports.getAllUsers = async (req, res) => {
         u.activo, 
         u.created_at,
         u.updated_at,
-        u.rfc,
         u.telefono,
         u.coordinacion_id,
         c.nombre as coordinacion_nombre
@@ -41,7 +40,7 @@ exports.getAllUsers = async (req, res) => {
 // Crear nuevo usuario (solo para admins)
 exports.createUser = async (req, res) => {
   try {
-    const { nombre, apellido_paterno, apellido_materno, email, password, role, rfc, telefono, coordinacion_id } = req.body;
+    const { nombre, apellido_paterno, apellido_materno, email, password, role, telefono, coordinacion_id } = req.body;
 
     // Verificar si el email ya existe
     const existingUser = await pool.query('SELECT id FROM usuarios WHERE email = $1', [email]);
@@ -67,7 +66,7 @@ exports.createUser = async (req, res) => {
         'SELECT id, nombre, apellido_paterno FROM usuarios WHERE coordinacion_id = $1 AND activo = true',
         [coordinacion_id]
       );
-      
+
       if (coordCheck.rows.length > 0) {
         const otherUser = coordCheck.rows[0];
         return res.status(400).json({
@@ -82,10 +81,10 @@ exports.createUser = async (req, res) => {
 
     // Insertar usuario
     const result = await pool.query(`
-      INSERT INTO usuarios (nombre, apellido_paterno, apellido_materno, email, password, role, rfc, telefono, coordinacion_id, activo)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
-      RETURNING id, nombre, apellido_paterno, apellido_materno, email, role, rfc, telefono, coordinacion_id, activo, created_at
-    `, [nombre, apellido_paterno, apellido_materno, email, hashedPassword, role, rfc, telefono, coordinacion_id]);
+      INSERT INTO usuarios (nombre, apellido_paterno, apellido_materno, email, password, role, telefono, coordinacion_id, activo)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
+      RETURNING id, nombre, apellido_paterno, apellido_materno, email, role, telefono, coordinacion_id, activo, created_at
+    `, [nombre, apellido_paterno, apellido_materno, email, hashedPassword, role, telefono, coordinacion_id]);
 
     res.status(201).json({
       success: true,
@@ -105,7 +104,7 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, apellido_paterno, apellido_materno, email, role, activo, rfc, telefono, coordinacion_id } = req.body;
+    const { nombre, apellido_paterno, apellido_materno, email, role, activo, telefono, coordinacion_id } = req.body;
 
     console.log('📝 UPDATE USER - ID:', id);
     console.log('📝 BODY RECIBIDO:', req.body);
@@ -144,7 +143,7 @@ exports.updateUser = async (req, res) => {
         'SELECT id, nombre, apellido_paterno FROM usuarios WHERE coordinacion_id = $1 AND id != $2 AND activo = true',
         [coordinacion_id, id]
       );
-      
+
       if (coordCheck.rows.length > 0) {
         const otherUser = coordCheck.rows[0];
         return res.status(400).json({
@@ -158,10 +157,10 @@ exports.updateUser = async (req, res) => {
     const result = await pool.query(`
       UPDATE usuarios 
       SET nombre = $1, apellido_paterno = $2, apellido_materno = $3, email = $4, role = $5, activo = $6, 
-          rfc = $7, telefono = $8, coordinacion_id = $9, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $10
-      RETURNING id, nombre, apellido_paterno, apellido_materno, email, role, activo, rfc, telefono, coordinacion_id, updated_at
-    `, [nombre, apellido_paterno, apellido_materno, email, role, activo, rfc, telefono, coordinacion_id, id]);
+          telefono = $7, coordinacion_id = $8, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $9
+      RETURNING id, nombre, apellido_paterno, apellido_materno, email, role, activo, telefono, coordinacion_id, updated_at
+    `, [nombre, apellido_paterno, apellido_materno, email, role, activo, telefono, coordinacion_id, id]);
 
     console.log('✅ Usuario actualizado en BD:', result.rows[0]);
 

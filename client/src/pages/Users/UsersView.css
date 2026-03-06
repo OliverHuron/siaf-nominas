@@ -68,14 +68,14 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 1px solid #e5e5e5;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .stat-icon {
@@ -127,16 +127,27 @@
   font-weight: 500;
 }
 
-.stat-total { border-left: 4px solid #667eea; }
-.stat-activos { border-left: 4px solid #48bb78; }
-.stat-admin { border-left: 4px solid #ed8936; }
-.stat-coordinador { border-left: 4px solid #4299e1; }
+.stat-total {
+  border-left: 4px solid #667eea;
+}
+
+.stat-activos {
+  border-left: 4px solid #48bb78;
+}
+
+.stat-admin {
+  border-left: 4px solid #ed8936;
+}
+
+.stat-coordinador {
+  border-left: 4px solid #4299e1;
+}
 
 /* Tabla */
 .table-container {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
   border: 1px solid #e5e5e5;
 }
@@ -162,14 +173,41 @@
 }
 
 /* Ajustar anchos de columnas para que quepa ACCIONES */
-.users-table th:nth-child(1) { width: 17%; }  /* USUARIO */
-.users-table th:nth-child(2) { width: 14%; }  /* EMAIL */
-.users-table th:nth-child(3) { width: 9%; }   /* RFC */
-.users-table th:nth-child(4) { width: 9%; }   /* TELEFONO */
-.users-table th:nth-child(5) { width: 14%; }  /* COORDINACIÓN */
-.users-table th:nth-child(6) { width: 9%; }   /* ROL */
-.users-table th:nth-child(7) { width: 8%; }   /* ESTADO */
-.users-table th:nth-child(8) { width: 20%; }  /* ACCIONES */
+.users-table th:nth-child(1) {
+  width: 20%;
+}
+
+/* USUARIO */
+.users-table th:nth-child(2) {
+  width: 18%;
+}
+
+/* EMAIL */
+.users-table th:nth-child(3) {
+  width: 10%;
+}
+
+/* TELEFONO */
+.users-table th:nth-child(4) {
+  width: 16%;
+}
+
+/* COORDINACIÓN */
+.users-table th:nth-child(5) {
+  width: 10%;
+}
+
+/* ROL */
+.users-table th:nth-child(6) {
+  width: 9%;
+}
+
+/* ESTADO */
+.users-table th:nth-child(7) {
+  width: 17%;
+}
+
+/* ACCIONES */
 
 .users-table tbody tr {
   border-bottom: 1px solid #e9ecef;
@@ -539,6 +577,7 @@
 
 /* Responsive */
 @media (max-width: 1200px) {
+
   .users-table th:nth-child(5),
   .users-table td:nth-child(5) {
     display: none;

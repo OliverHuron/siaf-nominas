@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { FaUser, FaIdCard, FaSave, FaTimes } from 'react-icons/fa';
+import { FaUser, FaBriefcase, FaSave, FaTimes } from 'react-icons/fa';
 import './UserForm.css';
 
-const UserForm = ({ 
-  initialData = null, 
+const UserForm = ({
+  initialData = null,
   coordinaciones = [],
-  onSubmit, 
-  onCancel 
+  onSubmit,
+  onCancel
 }) => {
   const [activeTab, setActiveTab] = useState('personal');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!initialData;
-  
+
   const [formData, setFormData] = useState({
     nombre: initialData?.nombre || '',
     apellido_paterno: initialData?.apellido_paterno || '',
@@ -19,7 +19,6 @@ const UserForm = ({
     email: initialData?.email || '',
     password: '',
     role: initialData?.role || 'usuario',
-    rfc: initialData?.rfc || '',
     telefono: initialData?.telefono || '',
     coordinacion_id: initialData?.coordinacion_id || null,
     activo: initialData?.activo !== undefined ? initialData.activo : true
@@ -35,14 +34,13 @@ const UserForm = ({
 
     try {
       const dataToSend = { ...formData };
-      
+
       // No enviar password vacío en modo edición
       if (isEditMode && !dataToSend.password) {
         delete dataToSend.password;
       }
 
       // Convertir campos vacíos a null
-      dataToSend.rfc = dataToSend.rfc || null;
       dataToSend.telefono = dataToSend.telefono || null;
       dataToSend.coordinacion_id = dataToSend.coordinacion_id || null;
 
@@ -130,16 +128,6 @@ const UserForm = ({
               </div>
 
               <div className="form-row">
-                <div className="form-group">
-                  <label>RFC</label>
-                  <input
-                    type="text"
-                    value={formData.rfc}
-                    onChange={(e) => handleChange('rfc', e.target.value.toUpperCase())}
-                    placeholder="XAXX010101000"
-                    maxLength="13"
-                  />
-                </div>
                 <div className="form-group">
                   <label>Teléfono</label>
                   <input
