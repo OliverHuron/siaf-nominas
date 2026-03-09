@@ -182,7 +182,15 @@ exports.updateUser = async (req, res) => {
 exports.changePassword = async (req, res) => {
   try {
     const { id } = req.params;
-    const { newPassword } = req.body;
+    const { newPassword, password } = req.body;
+    const passToHash = newPassword || password;
+
+    if (!passToHash) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña es requerida'
+      });
+    }
 
     // Verificar si el usuario existe
     const existingUser = await pool.query('SELECT id FROM usuarios WHERE id = $1', [id]);
@@ -194,7 +202,7 @@ exports.changePassword = async (req, res) => {
     }
 
     // Hash de nueva contraseña
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(passToHash, 10);
 
     // Actualizar contraseña
     await pool.query(`

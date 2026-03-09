@@ -118,7 +118,7 @@ const UsersView = () => {
 
     try {
       const response = await api.patch(`/api/users/${editingUser.id}/password`, {
-        password: newPassword
+        newPassword: newPassword
       });
 
       if (response.data.success) {
