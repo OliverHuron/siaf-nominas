@@ -402,3 +402,87 @@ exports.initializeYear = async (req, res) => {
     res.status(500).json({ error: 'Error al inicializar año' });
   }
 };
+
+// Obtener faltas agrupadas por mes (para gráfica del dashboard)
+exports.getFaltasPorMes = async (req, res) => {
+  try {
+    const year = req.query.year || new Date().getFullYear();
+
+    const result = await pool.query(`
+      SELECT
+        mes,
+        SUM(faltas_mes) AS total
+      FROM (
+        SELECT 1 AS mes,
+          (CASE WHEN enero_q1    = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN enero_q2    = 'F' THEN 1 ELSE 0 END) AS faltas_mes
+        FROM asistencias_quincenales WHERE anio = $1
+        UNION ALL
+        SELECT 2,
+          (CASE WHEN febrero_q1  = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN febrero_q2  = 'F' THEN 1 ELSE 0 END)
+        FROM asistencias_quincenales WHERE anio = $1
+        UNION ALL
+        SELECT 3,
+          (CASE WHEN marzo_q1    = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN marzo_q2    = 'F' THEN 1 ELSE 0 END)
+        FROM asistencias_quincenales WHERE anio = $1
+        UNION ALL
+        SELECT 4,
+          (CASE WHEN abril_q1    = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN abril_q2    = 'F' THEN 1 ELSE 0 END)
+        FROM asistencias_quincenales WHERE anio = $1
+        UNION ALL
+        SELECT 5,
+          (CASE WHEN mayo_q1     = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN mayo_q2     = 'F' THEN 1 ELSE 0 END)
+        FROM asistencias_quincenales WHERE anio = $1
+        UNION ALL
+        SELECT 6,
+          (CASE WHEN junio_q1    = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN junio_q2    = 'F' THEN 1 ELSE 0 END)
+        FROM asistencias_quincenales WHERE anio = $1
+        UNION ALL
+        SELECT 7,
+          (CASE WHEN julio_q1    = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN julio_q2    = 'F' THEN 1 ELSE 0 END)
+        FROM asistencias_quincenales WHERE anio = $1
+        UNION ALL
+        SELECT 8,
+          (CASE WHEN agosto_q1   = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN agosto_q2   = 'F' THEN 1 ELSE 0 END)
+        FROM asistencias_quincenales WHERE anio = $1
+        UNION ALL
+        SELECT 9,
+          (CASE WHEN septiembre_q1 = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN septiembre_q2 = 'F' THEN 1 ELSE 0 END)
+        FROM asistencias_quincenales WHERE anio = $1
+        UNION ALL
+        SELECT 10,
+          (CASE WHEN octubre_q1  = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN octubre_q2  = 'F' THEN 1 ELSE 0 END)
+        FROM asistencias_quincenales WHERE anio = $1
+        UNION ALL
+        SELECT 11,
+          (CASE WHEN noviembre_q1 = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN noviembre_q2 = 'F' THEN 1 ELSE 0 END)
+        FROM asistencias_quincenales WHERE anio = $1
+        UNION ALL
+        SELECT 12,
+          (CASE WHEN diciembre_q1 = 'F' THEN 1 ELSE 0 END +
+           CASE WHEN diciembre_q2 = 'F' THEN 1 ELSE 0 END)
+        FROM asistencias_quincenales WHERE anio = $1
+      ) sub
+      GROUP BY mes
+      ORDER BY mes
+    `, [year]);
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Error al obtener faltas por mes:', error);
+    res.status(500).json({ error: 'Error al obtener faltas por mes' });
+  }
+};

@@ -7,6 +7,7 @@ const { authMiddleware } = require('../middleware/auth.middleware');
 router.use(authMiddleware);
 
 // Rutas específicas primero (antes de las dinámicas)
+router.get('/faltas-por-mes', attendanceController.getFaltasPorMes);
 router.get('/stats/:anio?', attendanceController.getAttendanceStats);
 router.put('/update', attendanceController.updateAttendance);
 router.post('/initialize', attendanceController.initializeYear);
